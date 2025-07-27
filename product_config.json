@@ -1,0 +1,6 @@
+{
+    "board": "esp32_s3",
+    "drivers": ["i2c", "sht30", "spi", "lvgl"],
+    "hotplug": true,
+    "apps": ["weather", "heart_rate", "settings"]
+}
