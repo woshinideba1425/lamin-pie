@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdarg.h>
+
 #if defined(ESP_PLATFORM)
     #include "esp_log.h"
     #define PLATFORM_ESP32
@@ -115,3 +117,95 @@
 #undef LP_LOG_LEVEL
 #define LP_LOG_LEVEL LP_LOG_LEVEL_ERROR
 #endif 
+
+#ifdef __cplusplus
+namespace laminpie::utils {
+    using LogFuncType = void (*)(const char* fmt, ...);
+
+    inline void DefaultErrorLog(const char* fmt, ...)
+    {
+        va_list args;
+        va_start(args, fmt);
+        
+        #if defined(PLATFORM_ESP32)
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), fmt, args);
+            ESP_LOGE("LAMINPIE", "%s", buffer);
+        #elif defined(PLATFORM_GENERIC)
+            printf("[ERROR][LAMINPIE] ");
+            vprintf(fmt, args);
+            printf("\n");
+        #elif defined(PLATFORM_RTTHREAD)
+            rt_kprintf("[ERROR][LAMINPIE] ");
+            rt_vprintf(fmt, args);
+            rt_kprintf("\n");
+        #endif
+        
+        va_end(args);
+    }
+
+    /**
+     * @brief Universal value check and return
+     */
+    template<typename T, typename RetT>
+    inline RetT CheckValueAndReturn(T value, T min, T max, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
+        if (!(value >= min && value <= max)) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            
+            logFunc("%s: value %d not in range [%d, %d]", buffer, value, min, max);
+            return returnValue;
+        }
+        return true;
+    }
+
+    /**
+     * @brief Universal null check and return
+     */
+    template<typename T, typename RetT>
+    inline RetT CheckNullAndReturn(T value, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
+        if (value == nullptr) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            
+            logFunc("%s: value is nullptr", buffer);
+            return returnValue;
+        }
+        return true;
+    }
+
+    /**
+     * @brief Standard value check and return
+     */
+    template<typename T, typename RetT>
+    inline RetT CheckValueAndReturn(T value, T min, T max, RetT returnValue, const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        char buffer[256];
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        va_end(args);
+        
+        return CheckValueAndReturn(value, min, max, returnValue, DefaultErrorLog, buffer);
+    }
+
+    /**
+     * @brief Standard null check and return
+     */
+    template<typename T, typename RetT>
+    inline RetT CheckNullAndReturn(T value, RetT returnValue, const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        char buffer[256];
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        va_end(args);
+        
+        return CheckNullAndReturn(value, returnValue, DefaultErrorLog, buffer);
+    }
+}
+#endif

@@ -8,6 +8,7 @@
 #include <memory>
 #include <iostream>
 #include <cstdlib>
+#include "laminpie_log.hpp"
 
 namespace Assist{
 template<typename T, size_t Alignment = alignof(T)>
@@ -22,7 +23,7 @@ class CircularBuffer{
             size_t size = capacity_ * sizeof(T);
             void* ptr = nullptr;
             if (posix_memalign(&ptr, Alignment, size) != 0) {
-                ESP_LOGE("CircularBuffer", "Failed to allocate aligned memory");
+                LP_LOG_ERROR("CircularBuffer", "Failed to allocate aligned memory");
                 return;
             }
             aligned_buffer_ = static_cast<T*>(ptr);
