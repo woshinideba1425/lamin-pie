@@ -1,0 +1,130 @@
+menu "Device configuration"
+    if LAMINPIE_ENABLE_DEVICE
+        menu "Bus configuration"
+            config LAMINPIE_DEVICE_AUTO_INIT_BUS
+                bool "Auto initialize bus at system startup"
+                default y
+                help
+                    if enabled, the selected bus will be initialized at system startup
+
+            config LAMINPIE_DEVICE_AUTO_SCAN_BUS
+                bool "Auto scan bus"
+                default y
+                help
+                    if enabled, the selected bus will keep scanning for adding devices during system running
+                
+            if LAMINPIE_DEVICE_AUTO_INIT_BUS
+                config LAMINPIE_ENABLE_I2C_BUS
+                    bool "Enable I2C bus"
+                    default y
+                
+                config LAMINPIE_ENABLE_SPI_BUS
+                    bool "Enable SPI bus"
+                    default n
+                
+                config LAMINPIE_ENABLE_UART_BUS
+                    bool "Enable UART bus"
+                    default n
+            endif
+
+            menu "Device Internal Support Drivers"
+                menu "I2C Drivers"
+                    config LAMINPIE_ENABLE_SHT30_DRIVER
+                        depends on LAMINPIE_ENABLE_I2C_BUS
+                        bool "Enable SHT30 temperature & humidity sensor"
+                        default n
+                    
+                    config LAMINPIE_ENABLE_BMP280_DRIVER
+                        depends on LAMINPIE_ENABLE_I2C_BUS
+                        bool "Enable BMP280 pressure sensor"
+                        default n
+                endmenu
+                
+                menu "SPI Drivers"
+                    depends on LAMINPIE_ENABLE_SPI_BUS
+                    # SPI驱动配置
+                endmenu
+            endmenu
+        endmenu
+        menu "Board Support Package (BSP)"
+            choice LAMINPIE_BSP_PLATFORM
+                prompt "Select BSP platform"
+                default LAMINPIE_BSP_PLATFORM_ESP32
+                help
+                    Select the BSP platform for the device
+                config LAMINPIE_BSP_PLATFORM_ESP32
+                    bool "ESP32"
+                    help
+                        ESP32 is a series of low-cost, low-power, and low-complexity microcontrollers designed for IoT applications.
+                config LAMINPIE_BSP_PLATFORM_RT_THREAD
+                    bool "RT-Thread"
+                    help
+                        RT-Thread is a real-time operating system for microcontrollers.
+            endchoice
+
+            choice LAMINPIE_ESP32_BOARD
+                depends on LAMINPIE_BSP_PLATFORM_ESP32
+                prompt "Select ESP32 board"
+                default LAMINPIE_BSP_PLATFORM_BOARD_ESP32_S3
+                help
+                    Select the ESP32 board for the device
+                config LAMINPIE_BSP_PLATFORM_BOARD_ESP32_S3
+                    bool "esp32-s3"
+                config LAMINPIE_BSP_PLATFORM_BOARD_ESP32_P4
+                    bool "esp32-p4"
+            endchoice
+
+            choice LAMINPIE_RT_THREAD_BOARD
+                depends on LAMINPIE_BSP_PLATFORM_RT_THREAD
+                prompt "Select RT-Thread board"
+                default LAMINPIE_BSP_PLATFORM_BOARD_RT_THREAD_SF32
+                help
+                    Select the RT-Thread board for the device
+                config LAMINPIE_BSP_PLATFORM_BOARD_RT_THREAD_SF32
+                    bool "sf32"
+            endchoice
+
+            if LAMINPIE_BSP_PLATFORM_ESP32
+                if LAMINPIE_BSP_PLATFORM_BOARD_ESP32_S3
+                    menu "ESP32-S3 Configuration"
+                        depends on LAMINPIE_ENABLE_I2C_BUS
+                        config LAMINPIE_ESP32_I2C_PORT_SELECT
+                            int "I2c port"
+                            range 0 1
+                            default 0
+                            help
+                                Select the I2C port to use
+                                            
+                        config LAMINPIE_ESP32_I2C0_SDA_PIN
+                            int "GPIO SDA pin"
+                            range 0 48
+                            default 21
+                        
+                        config LAMINPIE_ESP32_I2C0_SCL_PIN
+                            int "GPIO SCL pin"
+                            range 0 48
+                            default 22
+                        
+                        config LAMINPIE_ESP32_I2C0_FREQ
+                            int "I2C frequency (Hz)"
+                            range 100000 1000000
+                            default 400000
+                    endmenu
+                endif
+            endif
+        endmenu
+
+        menu "Device Manager Configuration"
+            config LAMINPIE_DEVICE_MAX_COUNT
+                int "Maximum number of devices"
+                range 1 64
+                default 16
+            
+            config LAMINPIE_DEVICE_EVENT_QUEUE_SIZE
+                depends on LAMINPIE_DEVICE_AUTO_SCAN_BUS
+                int "Event queue size"
+                range 4 128
+                default 16
+        endmenu        
+    endif
+endmenu

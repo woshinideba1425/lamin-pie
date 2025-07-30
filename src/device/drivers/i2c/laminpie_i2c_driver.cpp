@@ -1,4 +1,4 @@
-#include "I2c_driver.h"
+#include "laminpie_i2c_driver.h"
 #include <vector>
 
 I2cDriver::I2cDriver(std::shared_ptr<Bus> bus) : _bus(bus) {

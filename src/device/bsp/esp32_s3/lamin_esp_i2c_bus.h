@@ -1,7 +1,7 @@
 #ifndef ESP_I2C_BUS_H
 #define ESP_I2C_BUS_H
 
-#include <I2c_bus.h>
+#include "laminpie_i2c_bus.h"
 #include "driver/i2c_types.h"
 #include "esp_err.h"
 #include <map>

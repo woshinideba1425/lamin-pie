@@ -1,5 +1,5 @@
-#include "esp_i2cbus.h"
-#include <device_types.h>
+#include "laminpie_esp_i2c_bus.h"
+#include "interface/device_types.h"
 #include "esp_log.h"
 #include <cstdint>
 #include <sys/_stdint.h>

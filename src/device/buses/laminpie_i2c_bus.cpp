@@ -1,6 +1,6 @@
-#include "I2c_bus.h"
+#include "laminpie_i2c_bus.h"
 #include "buffer_management.h"
-#include <device_types.h>
+#include "interface/device_types.h"
 #include <iostream>
 #include <sys/_stdint.h>
 

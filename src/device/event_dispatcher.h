@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <queue>
 #include <thread>
-#include "device_types.h"
+#include "interface/device_types.h"
 
 // 事件类型枚举
 enum class EventType {

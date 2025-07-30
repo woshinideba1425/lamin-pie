@@ -5,7 +5,7 @@
 #include <sys/_stdint.h>
 #include <driver/i2c_master.h>
 #include <cstring>
-#include "bus.h"
+#include "interface/bus.h"
 #include <async_deque.hpp>
 #include <circular_buffer.hpp>
 #include <buffer_management.h>

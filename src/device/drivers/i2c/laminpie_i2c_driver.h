@@ -1,7 +1,7 @@
 #pragma once
 
-#include "driver.h"
-#include "I2c_bus.h"
+#include "interface/driver.h"
+#include "laminpie_i2c_bus.h"
 
 class I2cDriver : public Driver {
 public:

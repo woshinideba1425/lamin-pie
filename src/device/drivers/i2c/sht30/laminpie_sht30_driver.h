@@ -1,6 +1,6 @@
 #pragma once
 
-#include <I2c_driver.h>
+#include "laminpie_i2c_driver.h"
 
 // SHT30相关常量定义
 #define SHT30_ADDR 0x44

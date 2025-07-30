@@ -6,9 +6,9 @@
 #include <memory>
 #include <mutex>
 #include <map>
-#include "device_types.h"
-#include "driver.h"
-#include "bus.h"
+#include "interface/device_types.h"
+#include "interface/driver.h"
+#include "interface/bus.h"
 #include "event_dispatcher.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

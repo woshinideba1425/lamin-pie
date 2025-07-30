@@ -1,5 +1,5 @@
-#include "sht30_driver.h"
-#include "device_manager.h"
+#include "laminpie_sht30_driver.h"
+#include "laminpie_device_manager.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include <sys/_stdint.h>

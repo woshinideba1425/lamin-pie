@@ -75,6 +75,20 @@ if(CONFIG_LAMINPIE_ENABLE_GUI)
     list(APPEND SRCS_CPP ${GUI_STYLE_SRCS_CPP})
 endif()
 
+#
+# DEVICE
+#
+if(CONFIG_LAMINPIE_ENABLE_DEVICE)
+    set(DEVICE_SRC_DIR ${LAMINPIE_SRC_DIRS}/device)
+    set(BUS_SRC_DIR ${DEVICE_SRC_DIR}/buses)
+    set(DRIVER_SRC_DIR ${DEVICE_SRC_DIR}/drivers)
+    file(GLOB_RECURSE DEVICE_SRCS_C ${DEVICE_SRC_DIR}/*.c)
+    file(GLOB_RECURSE DEVICE_SRCS_CPP ${DEVICE_SRC_DIR}/*.cpp)
+    list(APPEND SRCS_C ${DEVICE_SRCS_C})
+    list(APPEND SRCS_CPP ${DEVICE_SRCS_CPP})
+    list(APPEND LAMINPIE_INC_DIRS ${DEVICE_SRC_DIR} ${BUS_SRC_DIR} ${DRIVER_SRC_DIR})    
+endif()
+
 # Register component
 idf_component_register(SRCS ${SRCS_C} ${SRCS_CPP}
                 #   SRC_DIRS ${LAMINPIE_SRC_DIRS}

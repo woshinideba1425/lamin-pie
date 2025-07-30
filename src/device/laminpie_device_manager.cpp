@@ -1,5 +1,5 @@
-#include "device_manager.h"
-#include "bus.h"
+#include "laminpie_device_manager.h"
+#include "interface/bus.h"
 #include "esp_log.h"
 #include <algorithm>
 #include <memory>
