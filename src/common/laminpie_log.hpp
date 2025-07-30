@@ -150,8 +150,10 @@ namespace laminpie::utils {
     template<typename T, typename RetT>
     inline RetT CheckValueAndReturn(T value, T min, T max, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
         if (!(value >= min && value <= max)) {
-            
-            logFunc("%s: value %d not in range [%d, %d]", format, value, min, max);
+            va_list args;
+            va_start(args, format);
+            logFunc(format, args);
+            va_end(args);
             return returnValue;
         }
         return true;
@@ -163,25 +165,34 @@ namespace laminpie::utils {
     template<typename T, typename RetT>
     inline RetT CheckNullAndReturn(T value, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
         if (value == nullptr) {
-            logFunc("%s: value is nullptr", format);
+            va_list args;
+            va_start(args, format);
+            logFunc(format, args);
+            va_end(args);
             return returnValue;
         }
         return true;
     }
 
     template <typename RetT>
-    inline RetT CheckFalseReturn(bool condition, RetT returnValue, LogFuncType logFunc, const char* format) {
+    inline RetT CheckFalseReturn(bool condition, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
         if (!condition) {
-            logFunc("%s", format);
+            va_list args;
+            va_start(args, format);
+            logFunc(format, args);
+            va_end(args);
             return returnValue;
         }
         return returnValue ? returnValue : RetT{}; // 返回一个合适的默认值
     }
 
     template<typename T>
-    inline void CheckFalseExit(T value, LogFuncType logFunc, const char *format) {
+    inline void CheckFalseExit(T value, LogFuncType logFunc, const char *format, ...) {
         if (!value) {
-            logFunc("%s", format);
+            va_list args;
+            va_start(args, format);
+            logFunc(format, args);
+            va_end(args);
             return;
         }
     }
