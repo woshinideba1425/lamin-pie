@@ -1,0 +1,10 @@
+menuconfig LAMINPIE_SERVICES_ENABLE_STORAGE
+    bool "Storage NVS Services"
+    default y
+
+if LAMINPIE_SERVICES_ENABLE_STORAGE
+    config LAMINPIE_STORAGE_ENABLE_DEBUG_LOG
+        bool "Enable debug log output"
+        depends on LAMINPIE_LOG_LEVEL_DEBUG
+        default y
+endif # LAMINPIE_SERVICES_ENABLE_STORAGE

@@ -37,7 +37,7 @@ menu "LAMINPIE configuration"
             default y
     
         if LAMINPIE_ENABLE_AI_FRAMEWORK
-            rsource "ai_framework/Kconfig"
+            rsource "src/core/ai_framework/Kconfig"
         endif
     
         menuconfig LAMINPIE_ENABLE_GUI
@@ -45,7 +45,7 @@ menu "LAMINPIE configuration"
             default y
     
         if LAMINPIE_ENABLE_GUI
-            rsource "gui/Kconfig"
+            rsource "src/core/gui/Kconfig"
         endif
     
         menuconfig LAMINPIE_ENABLE_SERVICES
@@ -53,7 +53,7 @@ menu "LAMINPIE configuration"
             default y
     
         if LAMINPIE_ENABLE_SERVICES
-            rsource "services/Kconfig"
+            rsource "src/core/services/Kconfig"
         endif
     
         menuconfig LAMINPIE_ENABLE_SYSTEMS
@@ -61,7 +61,15 @@ menu "LAMINPIE configuration"
             default y
     
         if LAMINPIE_ENABLE_SYSTEMS
-            rsource "systems/Kconfig"
+            rsource "src/core/systems/Kconfig"
+        endif
+
+        menuconfig LAMINPIE_ENABLE_DEVICE
+            bool "Device"
+            default y
+    
+        if LAMINPIE_ENABLE_DEVICE
+            rsource "src/device/Kconfig"
         endif
     endmenu
 endmenu

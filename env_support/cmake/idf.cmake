@@ -3,6 +3,7 @@
 # LAMINPIE
 file(GLOB_RECURSE SOURCES ${LAMINPIE_ROOT_DIR}/src/*.c)
 set(LAMINPIE_INC_DIRS
+    ${LAMINPIE_ROOT_DIR}/
     ${LAMINPIE_ROOT_DIR}/src/
     ${LAMINPIE_ROOT_DIR}/src/common/
     ${LAMINPIE_ROOT_DIR}/src/core/
@@ -11,7 +12,7 @@ set(LAMINPIE_INC_DIRS
 
 # Public component requirement
 set(LAMINPIE_REQUIRES
-    lvgl nvs_flash main ui
+    lvgl nvs_flash main
 )
 
 # Private component requirement
