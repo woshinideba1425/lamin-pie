@@ -22,7 +22,7 @@
 #   define LAMINPIE_STYLE_LOG_ERROR(fmt, ...) ((void)0)
 #endif
 
-namespace laminpie::gui::style{
+namespace laminpie::gui{
     inline void StyleErrorLog(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);

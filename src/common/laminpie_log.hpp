@@ -121,7 +121,7 @@
 #ifdef __cplusplus
 namespace laminpie::utils {
     using LogFuncType = void (*)(const char* fmt, ...);
-
+    
     inline void DefaultErrorLog(const char* fmt, ...)
     {
         va_list args;
@@ -150,13 +150,8 @@ namespace laminpie::utils {
     template<typename T, typename RetT>
     inline RetT CheckValueAndReturn(T value, T min, T max, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
         if (!(value >= min && value <= max)) {
-            va_list args;
-            va_start(args, format);
-            char buffer[256];
-            vsnprintf(buffer, sizeof(buffer), format, args);
-            va_end(args);
             
-            logFunc("%s: value %d not in range [%d, %d]", buffer, value, min, max);
+            logFunc("%s: value %d not in range [%d, %d]", format, value, min, max);
             return returnValue;
         }
         return true;
@@ -168,16 +163,27 @@ namespace laminpie::utils {
     template<typename T, typename RetT>
     inline RetT CheckNullAndReturn(T value, RetT returnValue, LogFuncType logFunc, const char* format, ...) {
         if (value == nullptr) {
-            va_list args;
-            va_start(args, format);
-            char buffer[256];
-            vsnprintf(buffer, sizeof(buffer), format, args);
-            va_end(args);
-            
-            logFunc("%s: value is nullptr", buffer);
+            logFunc("%s: value is nullptr", format);
             return returnValue;
         }
         return true;
+    }
+
+    template <typename RetT>
+    inline RetT CheckFalseReturn(bool condition, RetT returnValue, LogFuncType logFunc, const char* format) {
+        if (!condition) {
+            logFunc("%s", format);
+            return returnValue;
+        }
+        return returnValue ? returnValue : RetT{}; // 返回一个合适的默认值
+    }
+
+    template<typename T>
+    inline void CheckFalseExit(T value, LogFuncType logFunc, const char *format) {
+        if (!value) {
+            logFunc("%s", format);
+            return;
+        }
     }
 
     /**
@@ -185,13 +191,16 @@ namespace laminpie::utils {
      */
     template<typename T, typename RetT>
     inline RetT CheckValueAndReturn(T value, T min, T max, RetT returnValue, const char* format, ...) {
-        va_list args;
-        va_start(args, format);
-        char buffer[256];
-        vsnprintf(buffer, sizeof(buffer), format, args);
-        va_end(args);
-        
-        return CheckValueAndReturn(value, min, max, returnValue, DefaultErrorLog, buffer);
+        if (!(value >= min && value <= max)) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            DefaultErrorLog("%s: value %d not in range [%d, %d]", buffer, value, min, max);
+            return returnValue;
+        }
+        return true;
     }
 
     /**
@@ -199,13 +208,51 @@ namespace laminpie::utils {
      */
     template<typename T, typename RetT>
     inline RetT CheckNullAndReturn(T value, RetT returnValue, const char* format, ...) {
-        va_list args;
-        va_start(args, format);
-        char buffer[256];
-        vsnprintf(buffer, sizeof(buffer), format, args);
-        va_end(args);
-        
-        return CheckNullAndReturn(value, returnValue, DefaultErrorLog, buffer);
+        if (value == nullptr) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            
+            DefaultErrorLog("%s: value is nullptr", buffer);
+            return returnValue;
+        }
+        return true;
     }
+
+    /**
+     * @brief 标准条件检查函数，使用DefaultErrorLog作为日志输出
+     */
+    template<typename RetT>
+    inline RetT CheckFalseReturn(bool condition, RetT returnValue, const char* format, ...) {
+        if (!condition) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            
+            DefaultErrorLog("%s", buffer);
+            return returnValue;
+        }
+        return returnValue ? returnValue : RetT{};
+    }
+
+    template<typename T>
+    inline void CheckFalseExit(T value, const char *format, ...) {
+        if (!value) {
+            va_list args;
+            va_start(args, format);
+            char buffer[256];
+            vsnprintf(buffer, sizeof(buffer), format, args);
+            va_end(args);
+            
+            DefaultErrorLog("%s", buffer);
+            return;
+        }
+    }
+
+
 }
 #endif

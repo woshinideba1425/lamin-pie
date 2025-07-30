@@ -7,7 +7,7 @@
 #include "private/laminpie_gui_style_utils.hpp"
 #include "laminpie_gui_style.hpp"
 
-namespace laminpie::gui::style {
+namespace laminpie::gui {
 
 bool StyleSize::calibrate(const StyleSize &parent)
 {

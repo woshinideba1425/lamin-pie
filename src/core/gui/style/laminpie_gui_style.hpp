@@ -9,7 +9,7 @@
 #include <limits>
 #include <stdint.h>
 
-namespace laminpie::gui::style {
+namespace laminpie::gui {
 
 enum StyleWidthItem {
     STYLE_WIDTH_ITEM_BORDER = 0,        /*!< Border width of UI elements */
