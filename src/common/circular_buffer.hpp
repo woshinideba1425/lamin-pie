@@ -280,16 +280,18 @@ class CircularBuffer{
             }
         }
 
-        static std::size_t nextPowerOfTwo(std::size_t x){
+        static std::size_t nextPowerOfTwo(std::size_t x) {
+            if (x == 0) return 1;
             x--;
             x |= x >> 1;
             x |= x >> 2;
             x |= x >> 4;
             x |= x >> 8;
             x |= x >> 16;
+            #if SIZE_MAX > 0xFFFFFFFF // 只有当size_t是64位时才执行32位右移
             x |= x >> 32;
-            x++;
-            return x;
+            #endif
+            return x + 1;
         }
         T* aligned_buffer_ = nullptr;  // 替代原来的vector<T>
         std::size_t capacity_;

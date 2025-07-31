@@ -3,7 +3,7 @@
 
 I2cDriver::I2cDriver(std::shared_ptr<Bus> bus) : _bus(bus) {
     // 只进行一次RTTI操作
-    _i2c_bus = std::dynamic_pointer_cast<I2c_bus>(bus);
+    _i2c_bus = std::static_pointer_cast<I2c_bus>(bus);
     if (!_i2c_bus) {
         // 处理错误：总线不是I2c_bus类型
         throw std::invalid_argument("Bus is not an I2c_bus");
@@ -18,7 +18,7 @@ I2cDriver::~I2cDriver() {
 
 void I2cDriver::setBus(std::shared_ptr<Bus> bus) {
     _bus = bus;
-    _i2c_bus = std::dynamic_pointer_cast<I2c_bus>(bus);
+    _i2c_bus = std::static_pointer_cast<I2c_bus>(bus);
     if (!_i2c_bus) {
         throw std::invalid_argument("Bus is not an I2c_bus");
     }
@@ -192,13 +192,12 @@ bool I2cDriver::writeDevice(uint16_t deviceAddr, const uint8_t* data, size_t len
 }
 
 // 实现写入并读取设备函数
-bool I2cDriver::writeReadDevice(uint16_t deviceAddr, const uint8_t* writeData, size_t writeLen, uint8_t* readData, size_t readLen, bool noStop) {
-
+bool I2cDriver::writeReadDevice(uint16_t deviceAddr, const uint8_t* writeData, size_t writeLen, uint8_t* readData, size_t readLen) {
     I2CBusCommand cmd;
     cmd.deviceAddress = deviceAddr;
     cmd.transferType = I2CBusCommand::WRITE_READ;
     cmd.readSize = readLen;
-    cmd.options.noStop = noStop;
+    cmd.options.noStop = false; // 默认不使用noStop
     
     std::vector<uint8_t> writeData_vec(writeData, writeData + writeLen);
     BufferView view = _i2c_bus->addToWriteBuffer(writeData_vec, cmd);

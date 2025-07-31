@@ -3,6 +3,8 @@
 #include "esp_log.h"
 #include <cstdint>
 #include <sys/_stdint.h>
+#include <inttypes.h>
+#include "driver/i2c.h"
 
 EspI2cBus::EspI2cBus(i2c_port_num_t busNumber, gpio_num_t sda_pin, gpio_num_t scl_pin, uint32_t frequency)
     : I2c_bus(busNumber, sda_pin, scl_pin, frequency),
@@ -21,7 +23,7 @@ EspI2cBus::~EspI2cBus() {
 }
 
 bool EspI2cBus::initialize() {
-    ESP_LOGI(TAG, "Initializing I2C on SDA: %d, SCL: %d with frequency: %d Hz", sda_pin_, scl_pin_, frequency_);
+    ESP_LOGI(TAG, "Initializing I2C on SDA: %d, SCL: %d with frequency: %lu Hz", sda_pin_, scl_pin_, (unsigned long)frequency_);
 
     esp_err_t ret;
         i2c_master_bus_config_t i2c_bus_cfg = {
