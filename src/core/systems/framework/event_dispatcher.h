@@ -23,6 +23,7 @@ enum class EventType {
 };
 
 // 事件基类
+template<typename T>
 struct Event {
     EventType type;
     std::string sourceId;
@@ -58,7 +59,9 @@ public:
     }
     
     // 注册事件监听器
-    uint32_t addEventListener(EventType type, EventCallback callback);
+    template<typename T>
+    
+    uint32_t addEventListener(T type, EventCallback callback);
     
     // 移除事件监听器
     bool removeEventListener(uint32_t listenerId);

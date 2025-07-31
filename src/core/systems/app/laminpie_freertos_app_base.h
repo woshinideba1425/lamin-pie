@@ -20,8 +20,6 @@ class FreeRTOSAppBase {
 private:
     lv_obj_t* _screen;  // 每个任务绑定一块 LVGL 屏幕
     std::string _name;
-    std::unique_ptr<tskTaskControlBlock, TaskHandleDeleter> _task_handle;  // 使用 unique_ptr 管理任务句柄
-    SIMPLEKV::SimpleKV* _database;
     int _stack;
     lv_event_cb_t _event_callback;
     int app_proity = 4;
