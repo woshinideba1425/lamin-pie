@@ -1,6 +1,9 @@
 #pragma once 
 
 #include "laminpie_conf.h"
+#ifdef __cplusplus
+#include "laminpie_log.hpp"
+#endif
 // *INDENT-OFF*
 #if defined(ESP_PLATFORM)
 #include "sdkconfig.h"

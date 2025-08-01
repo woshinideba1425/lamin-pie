@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "app.hpp"
-#include "app_register.h"
+#include "laminpie_app_base.hpp"
+#include "laminpie_app_register.h"
 #include "esp_log.h"
 
 namespace LAMINATEPIE{

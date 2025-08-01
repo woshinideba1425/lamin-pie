@@ -1,12 +1,12 @@
-#include "app.hpp"
+#include "laminpie_app_base.hpp"
 #include "vector"
 #include <unordered_map>  // 使用哈希表来存储应用名称与句柄的映射
 
-namespace LAMINATEPIE {
+namespace laminpie::system::app {
 
 
     struct APPList_t {
-        FreeRTOSAppBase* app = nullptr;
+        Laminpie_App_Base* app = nullptr;
         int id = -1;
         bool isSystemApp = false;  // 添加系统应用标识
     };
@@ -32,7 +32,7 @@ namespace LAMINATEPIE {
              * @param userData Custom user data
              * @return int App ID
              */
-            int install(FreeRTOSAppBase* app, SIMPLEKV::SimpleKV_ESP* database, void* userData = nullptr);
+            int install(Laminpie_App_Base* app, void* userData = nullptr);
             
             /**
              * @brief Register app as system app
@@ -40,16 +40,16 @@ namespace LAMINATEPIE {
              * @param app App pointer to register as system app
              * @return bool Success status
              */
-            bool registerSystemApp(FreeRTOSAppBase* app);
+            bool registerSystemApp(Laminpie_App_Base* app);
             
-            bool uninstall(FreeRTOSAppBase* app);
+            bool uninstall(Laminpie_App_Base* app);
             inline bool uninstall(int id) { return uninstall(getApp(id)); }
             inline bool uninstall(const char* name) { return uninstall(getApp(name)); }
 
 
             /* Basic API */
             inline std::vector<APPList_t> getAppList() {
-                ESP_LOGI("APP_Register", "Total installed apps: %d", _app_list.size());
+                LD_LOGI("APP_Register", "Total installed apps: %d", _app_list.size());
     
                 for (const auto& appEntry : _app_list) {
                     ESP_LOGI("APP_Register", "App ID: %d, App Name: %s, System App: %s", 
@@ -60,11 +60,11 @@ namespace LAMINATEPIE {
                  return _app_list; 
                  }
             inline uint16_t getAppNum() { return (uint16_t)_app_list.size(); }
-            int getAppID(FreeRTOSAppBase* app);
+            int getAppID(Laminpie_App_Base* app);
             int getAppID(const char* name);
-            FreeRTOSAppBase* getApp(int id);
-            FreeRTOSAppBase* getApp(const char* name);
-            bool isSystemApp(FreeRTOSAppBase* app) const;
+            Laminpie_App_Base* getApp(int id);
+            Laminpie_App_Base* getApp(const char* name);
+            bool isSystemApp(Laminpie_App_Base* app) const;
     };
 
     

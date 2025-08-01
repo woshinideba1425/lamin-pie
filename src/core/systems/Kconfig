@@ -1,0 +1,23 @@
+menu "Systems"
+    menuconfig LAMINPIE_SYSTEM_ENABLE_DEBUG_LOG
+        bool "Enable debug log output"
+        depends on LAMINPIE_LOG_LEVEL_DEBUG
+
+    if LAMINPIE_SYSTEM_ENABLE_DEBUG_LOG
+        config LAMINPIE_SYSTEM_APP_ENABLE_DEBUG_LOG
+            bool "App"
+            default y
+
+        config LAMINPIE_SYSTEM_EVENT_ENABLE_DEBUG_LOG
+            bool "Event"
+            default y
+
+        config LAMINPIE_SYSTEM_MANAGER_ENABLE_DEBUG_LOG
+            bool "Manager"
+            default y
+
+        config LAMINPIE_SYSTEM_CORE_ENABLE_DEBUG_LOG
+            bool "Core"
+            default y
+    endif # LAMINPIE_SYSTEM_ENABLE_DEBUG_LOG
+endmenu
