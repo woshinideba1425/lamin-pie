@@ -9,7 +9,7 @@
 #include "interface/device_types.h"
 #include "interface/driver.h"
 #include "interface/bus.h"
-#include "event_dispatcher.h"
+#include "laminpie_event_dispatcher.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"

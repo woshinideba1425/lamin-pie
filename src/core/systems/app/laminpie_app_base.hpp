@@ -8,6 +8,7 @@
 #include "lvgl/laminpie_lv_helper.hpp"
 #include "../laminpie_system_internal.h"
 #include "src/core/systems/framework/laminpie_system_event_type.hpp"
+#include "laminpie_app_navigation.hpp"
 
 namespace laminpie::system::app {
 typedef struct {
@@ -91,7 +92,6 @@ protected:
     virtual void onResume() = 0;
     virtual void onPause() = 0;
     virtual void onDestroy() = 0;
-    virtual bool onBack() = 0;
     virtual void onRunningBG() = 0;  
 
     Laminpie_Framework &_framework;
@@ -101,6 +101,9 @@ private:
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;
     event::Laminpie_App_Status_t _status;
+    //Navigation
+    AppNode _app_node;
+    PageNode _home_page_node;
     // Attributes
     int _id;
     struct {

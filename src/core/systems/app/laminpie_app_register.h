@@ -49,7 +49,7 @@ namespace laminpie::system::app {
 
             /* Basic API */
             inline std::vector<APPList_t> getAppList() {
-                LD_LOGI("APP_Register", "Total installed apps: %d", _app_list.size());
+                SYSTEM_APP_LOG_INFO("APP_Register", "Total installed apps: %d", _app_list.size());
     
                 for (const auto& appEntry : _app_list) {
                     ESP_LOGI("APP_Register", "App ID: %d, App Name: %s, System App: %s", 
