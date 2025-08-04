@@ -12,7 +12,7 @@ bool Laminpie_App_Base::StartRecordResource(void)
     utils::CheckFalseReturn(checkInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource", getName(), _id);
 
-    disp = _framework.getDisplayDevice();
+    // disp = _framework.getDisplayDevice();
     utils::CheckNullAndReturn(disp, false, "Invalid display");
 
     if (_flags.is_resource_recording) {
@@ -54,7 +54,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
         return true;
     }
 
-    disp = _framework->getDisplayDevice();
+    // disp = _framework->getDisplayDevice();
     utils::CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen

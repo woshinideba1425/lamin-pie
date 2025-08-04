@@ -3,6 +3,7 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+#include <stdint.h>
 #include <type_traits>
 #include <vector>
 #include <memory>
@@ -11,6 +12,7 @@
 #include <thread>
 #include "laminpie_system_event_type.hpp"
 #include "../laminpie_system_internal.h"
+#include "lvgl.h"
 
 
 namespace laminpie::system::event {
@@ -61,6 +63,17 @@ public:
         uint32_t id = _nextListenerId++;
         _listeners[type].push_back({id, std::move(wrapper)});
         return id;
+    }
+
+    uint32_t addEventListener(Laminpie_AppEventType ui_data, Ui_Update_Event_t ui_update_data){
+        lv_obj_t *obj = ui_update_data.obj;
+        lv_theme_t *theme = ui_update_data.theme;
+        lv_event_code_t event = ui_update_data.event;
+        lv_event_cb_t cb = ui_update_data.cb;
+        void *user_data = ui_update_data.user_data;
+
+        lv_obj_add_event_cb(obj, cb, event, user_data);
+        return 0;
     }
     
     // 移除事件监听器

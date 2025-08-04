@@ -14,12 +14,16 @@
 #   define LAMINPIE_LVGL_LOG_INFO(fmt, ...) LP_MOD_LOG_INFO(LV_LOG_TAG, LAMINPIE_LVGL_ENABLE_DEBUG_LOG, fmt, ##__VA_ARGS__)
 #   define LAMINPIE_LVGL_LOG_WARN(fmt, ...) LP_MOD_LOG_WARN(LV_LOG_TAG, LAMINPIE_LVGL_ENABLE_DEBUG_LOG, fmt, ##__VA_ARGS__)
 #   define LAMINPIE_LVGL_LOG_ERROR(fmt, ...) LP_MOD_LOG_ERROR(LV_LOG_TAG, LAMINPIE_LVGL_ENABLE_DEBUG_LOG, fmt, ##__VA_ARGS__)
+#   define LOG_TRACE_GUARD() LP_LOG_TRACE_GUARD(LV_LOG_TAG)
+#   define LOG_TRACE_GUARD_WITH_THIS() LP_LOG_TRACE_GUARD_WITH_THIS(LV_LOG_TAG)
 #else
 #   define LAMINPIE_LVGL_LOG_TRACE(fmt, ...) ((void)0)
 #   define LAMINPIE_LVGL_LOG_DEBUG(fmt, ...) ((void)0)
 #   define LAMINPIE_LVGL_LOG_INFO(fmt, ...) ((void)0)
 #   define LAMINPIE_LVGL_LOG_WARN(fmt, ...) ((void)0)
 #   define LAMINPIE_LVGL_LOG_ERROR(fmt, ...) ((void)0)
+#   define LOG_TRACE_GUARD() ((void)0)
+#   define LOG_TRACE_GUARD_WITH_THIS() ((void)0)
 #endif
 
 namespace laminpie::gui{
@@ -39,4 +43,9 @@ namespace laminpie::gui{
 #define CheckFalseReturn(condition, returnValue, format, ...) \
     utils::CheckFalseReturn(condition, returnValue, StyleErrorLog, format, ##__VA_ARGS__)
 
+#define CheckNullExit(value, format, ...) \
+    utils::CheckNullExit(value, StyleErrorLog, format, ##__VA_ARGS__)
+
+#define CheckFalseExit(condition, format, ...) \
+    utils::CheckFalseExit(condition, StyleErrorLog, format, ##__VA_ARGS__)
 }

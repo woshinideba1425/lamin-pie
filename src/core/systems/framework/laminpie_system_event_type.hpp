@@ -89,15 +89,16 @@ struct App_Status_t : public Event<Laminpie_App_Status_t> {
 //////////////////////////////////////////////////////// UI event type ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum class Laminpie_Ui_Event_t {
+enum class Laminpie_AppEventType {
     kUI_Event_Update = 0,
 };
 
-struct Ui_Event_t : public Event<Laminpie_Ui_Event_t> {
+struct Ui_Update_Event_t : public Event<Laminpie_AppEventType> {
     lv_obj_t *obj;
     lv_theme_t *theme;
-    lv_event_t *event;
+    lv_event_code_t event;
     lv_event_cb_t cb;
+    void *user_data;
 };
 
 }
