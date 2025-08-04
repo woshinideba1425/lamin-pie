@@ -5,9 +5,9 @@ namespace laminpie::system::app {
 
 Laminpie_App_Navigation::Laminpie_App_Navigation(AppNode root)
 : _root_app(root), _current_app(root), _current_page(nullptr), _app_node_list()
-{
+    {
     if(_root_app) {
-        _app_node_list.push_back(root);
+            _app_node_list.push_back(root);
         SYSTEM_APP_LOG_INFO("Navigation system initialized with root app: %s", std::string(_root_app->appId).c_str());
     } else {
         SYSTEM_APP_LOG_WARN("Navigation system initialized without a root app");
@@ -15,7 +15,7 @@ Laminpie_App_Navigation::Laminpie_App_Navigation(AppNode root)
 }
 
 bool Laminpie_App_Navigation::NavigateToApp(const std::string& appId)
-{
+    {
     SYSTEM_APP_LOG_INFO("Attempting to navigate to app: %s", appId.c_str());
     
     AppNode target = FindApp(appId);
@@ -49,7 +49,7 @@ bool Laminpie_App_Navigation::NavigateToApp(const std::string& appId)
 }
 
 bool Laminpie_App_Navigation::NavigateBackToParentApp()
-{
+    {
     if (!_current_app || _current_app == _root_app) {
         SYSTEM_APP_LOG_WARN("Cannot navigate back: already at root or invalid state");
         return false;
@@ -274,8 +274,8 @@ void Laminpie_App_Navigation::RegisterApp(AppNode app)
         _root_app = app;
         _current_app = app;
         SYSTEM_APP_LOG_INFO("Set as root and current app");
-    }
-}
+            }
+        }
 
 void Laminpie_App_Navigation::SetAppRelationship(const std::string& parentId, const std::string& childId)
 {
@@ -309,7 +309,7 @@ AppNode Laminpie_App_Navigation::FindApp(const std::string& appId) const
         }
     }
     
-    SYSTEM_APP_LOG_ERROR("App navigation error: appId %s not found", appId.c_str());
+        SYSTEM_APP_LOG_ERROR("App navigation error: appId %s not found", appId.c_str());
     return nullptr;
 }
 
@@ -319,7 +319,7 @@ PageNode Laminpie_App_Navigation::FindPage(const std::string& pageId) const
         SYSTEM_APP_LOG_ERROR("Cannot find page: no current app");
         return nullptr;
     }
-    
+
     // Search in all page collections of the current app
     for (const auto& pageCollection : _current_app->appPages) {
         for (const auto& page : pageCollection.second) {

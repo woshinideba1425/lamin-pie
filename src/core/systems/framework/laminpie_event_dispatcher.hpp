@@ -3,6 +3,7 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+#include <type_traits>
 #include <vector>
 #include <memory>
 #include <unordered_map>
@@ -11,12 +12,18 @@
 #include "laminpie_system_event_type.hpp"
 #include "../laminpie_system_internal.h"
 
+
 namespace laminpie::system::event {
 
-template<EnumType T>
-using EventCallback = std::function<void(const Event<T>&)>;
+template<typename EventArgT, typename EnumT>
+concept IsDerivedFromEvent = std::is_base_of_v<Event<EnumT>, EventArgT>;
 
-template<EnumType T>
+template<typename CallbackT, typename EventArgT>
+concept IsCallbackForEvent = requires(CallbackT callback, EventArgT event){
+    callback(event);
+};
+
+template<EnumType EventType>
 class LaminPie_EventDispatcher {
 public:
     static LaminPie_EventDispatcher& getInstance() {
@@ -30,6 +37,13 @@ public:
         std::lock_guard<std::mutex> lock(_mutex);
         uint32_t id = _nextListenerId++;
         _listeners[type].push_back({id, callback});
+        return id;
+    }
+
+    uint32_t addEventListener(Ui_Event_t type, EventCallback<Ui_Event_t> callback) {
+        SYSTEM_EVENT_LOG_DEBUG("addEventListener: type=%d, callback=%p", type, callback);
+        std::lock_guard<std::mutex> lock(_mutex);
+        lv_obj_send_event(lv_obj_get_screen(lv_scr_act()), type, callback);
         return id;
     }
     

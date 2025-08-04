@@ -80,23 +80,74 @@ protected:
     event::LaminPie_EventDispatcher<event::Laminpie_App_Status_t> _event_dispatcher;
     bool notifyCoreClosed(void) const;
     void setLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
-    bool startRecordResource(void);
-    bool endRecordResource(void);
-    bool cleanRecordResource(void);
 
 protected:
     /// @brief 用于注册app环节的代码执行
-    virtual void onSetup() {}
-    virtual void onCreate() = 0;  
-    virtual void onLoop() = 0;
-    virtual void onResume() = 0;
-    virtual void onPause() = 0;
-    virtual void onDestroy() = 0;
-    virtual void onRunningBG() = 0;  
+    virtual void ONSetup() {}
+    virtual void ONCreate() = 0;  
+    virtual void ONLoop() = 0;
+    virtual void ONResume() = 0;
+    virtual void ONPause() = 0;
+    virtual void ONDestroy() = 0;
+    virtual void ONRunningBG() = 0;  
+    /**
+     * @brief Start recording resources(screens, timers, and animations) manually.
+     *
+     * @note If the `enable_resize_visual_area` flag in `ESP_Brookesia_CoreAppData_t` is set, the core will resize the visual
+     *       area of all recorded screens which are recorded in this function. This is useful when the screen displays
+     *       floating UIs, such as a status bar. Otherwise, the app's screens will be displayed in full screen, but
+     *       some areas might be not visible. The final visual area of the app is the intersection of the app's visual
+     *       area and the `screen_size`. The app can call the `getVisualArea()` function to retrieve the final visual
+     *       area
+     * @note This function should be called before creating any resources, including screens (`lv_obj_create(NULL)`),
+     *       animations (`lv_anim_start()`), and timers (`lv_timer_create()`)
+     * @note This function should not be called in the `run()` and `pause()` functions.
+     *
+     * @return true if successful, otherwise false
+     *
+     */
+    bool StartRecordResource(void);
 
+    /**
+     * @brief Stop recording resources(screens, timers, and animations) manually.
+     *
+     * @note This function should be called after creating any resources, including screens (`lv_obj_create(NULL)`),
+     *       animations (`lv_anim_start()`), and timers (`lv_timer_create()`)
+     * @note This function should not be called in the `run()` and `pause()` functions.
+     *
+     * @return true if successful, otherwise false
+     *
+     */
+    bool EndRecordResource(void);
+
+    /**
+     * @brief Cleanup all recorded resources(screens, timers, and animations) manually. These resources are recorded in
+     *        app's `run()` and `pause()` functions, or between the `startRecordResource()` and `stopRecordResource()`
+     *        functions.
+     *
+     * @note If the `enable_recycle_resource` flag in `ESP_Brookesia_CoreAppData_t` is set, when app closes, the core will
+     *       call this function automatically. So the app doesn't need to call this function manually.
+     * @note This function will clear all resources records after finishing the cleanup.
+     *
+     * @return true if successful, otherwise false
+     *
+     */
+    bool CleanRecordResource(void);
     Laminpie_Framework &_framework;
 
 private:
+    bool setVisualArea(const lv_area_t &area);
+    bool calibrateVisualArea(void);
+    bool initDefaultScreen(void);
+    bool cleanDefaultScreen(void);
+    bool saveRecentScreen(bool check_valid);
+    bool loadRecentScreen(void);
+    bool resetRecordResource(void);
+    bool enableAutoClean(void);
+    bool saveDisplayTheme(void);
+    bool loadDisplayTheme(void);
+    bool saveAppTheme(void);
+    bool loadAppTheme(void);
     //Core
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;

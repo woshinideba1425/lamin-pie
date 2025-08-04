@@ -5,6 +5,9 @@
 #include <vector>
 #include <memory>
 #include "interface/device_types.h"
+#include "lvgl.h"
+#include "misc/lv_types.h"
+
 
 namespace laminpie::system::event {
 // 事件基类
@@ -35,16 +38,15 @@ enum class DeviceEventType {
 };
 
 // 设备事件
-template<EnumType T>
-struct DeviceEvent : public Event<T> {
+struct DeviceEvent : public Event<DeviceEventType> {
     std::shared_ptr<DeviceIdentifier> device;
     std::vector<std::shared_ptr<DeviceIdentifier>> devices;
     
-    DeviceEvent(T t, std::shared_ptr<DeviceIdentifier> dev) 
-        : Event<T>(t, dev->id), device(dev) {}
+    DeviceEvent(DeviceEventType t, std::shared_ptr<DeviceIdentifier> dev) 
+        : Event<DeviceEventType>(t, dev->id), device(dev) {}
         
-    DeviceEvent(T t, const std::vector<std::shared_ptr<DeviceIdentifier>>& devList)
-        : Event<T>(t, "device_list"), devices(devList) {
+    DeviceEvent(DeviceEventType t, const std::vector<std::shared_ptr<DeviceIdentifier>>& devList)
+        : Event<DeviceEventType>(t, "device_list"), devices(devList) {
         if (!devList.empty()) {
             device = devList[0];
         }
@@ -69,20 +71,33 @@ enum class BootEventType {
 //////////////////////////////////////////////////////// App event type ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
+enum class Laminpie_App_Status_t {
     kApp_Status_Uninstalled = 0,
     kApp_Status_Running,
     kApp_Status_Paused,
     kApp_Status_Closed,
     kApp_Status_RunningBg
-} Laminpie_App_Status_t;
+};
 
-template<EnumType T>
-struct App_Status_t : public Event<T> {
+struct App_Status_t : public Event<Laminpie_App_Status_t> {
     std::shared_ptr<Laminpie_App_Status_t> app;
     std::vector<std::shared_ptr<Laminpie_App_Status_t>> apps;
     
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////// UI event type ////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum class Laminpie_Ui_Event_t {
+    kUI_Event_Update = 0,
+};
+
+struct Ui_Event_t : public Event<Laminpie_Ui_Event_t> {
+    lv_obj_t *obj;
+    lv_theme_t *theme;
+    lv_event_t *event;
+    lv_event_cb_t cb;
+};
 
 }
