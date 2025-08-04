@@ -83,9 +83,15 @@
 
 // 模块日志宏（带开关控制）
 #if LP_LOG_LEVEL <= LP_LOG_LEVEL_TRACE
-#define LP_MOD_LOG_TRACE(tag, enable, fmt, ...) do { if (enable) LP_LOG_TRACE(tag, fmt, ##__VA_ARGS__); } while(0)
+#define LP_MOD_LOG_TRACE_ENTER(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "Enter"); } while(0)
+#define LP_MOD_LOG_TRACE_EXIT(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "Exit"); } while(0)
+#define LP_MOD_LOG_TRACE_ENTER_WITH_THIS(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "(@%p)Enter", this); } while(0)
+#define LP_MOD_LOG_TRACE_EXIT_WITH_THIS(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "(@%p)Exit", this); } while(0)
 #else
-#define LP_MOD_LOG_TRACE(tag, enable, fmt, ...) ((void)0)
+#define LP_MOD_LOG_TRACE_ENTER(tag, enable) ((void)0)
+#define LP_MOD_LOG_TRACE_EXIT(tag, enable) ((void)0)
+#define LP_MOD_LOG_TRACE_ENTER_WITH_THIS(tag, enable) ((void)0)
+#define LP_MOD_LOG_TRACE_EXIT_WITH_THIS(tag, enable) ((void)0)
 #endif
 
 #if LP_LOG_LEVEL <= LP_LOG_LEVEL_DEBUG
