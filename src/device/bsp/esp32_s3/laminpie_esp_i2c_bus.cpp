@@ -5,7 +5,7 @@
 #include <sys/_stdint.h>
 #include <inttypes.h>
 #include "driver/i2c.h"
-
+namespace laminpie::device::bsp::esp32_s3 {
 EspI2cBus::EspI2cBus(i2c_port_num_t busNumber, gpio_num_t sda_pin, gpio_num_t scl_pin, uint32_t frequency)
     : I2c_bus(busNumber, sda_pin, scl_pin, frequency),
     busNumber_(busNumber),
@@ -148,7 +148,7 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
         }
     }
     
-    auto event = std::make_shared<Event>(EventType::BUS_SCAN_COMPLETE, "bus_scan_complete");
+    auto event = std::make_shared<Event>(DeviceEventType::kBusScanComplete, "bus_scan_complete");
     _eventDispatcher.dispatchEvent(event);
     
     return device_list;
@@ -304,4 +304,5 @@ BusTransferResult EspI2cBus::executeCommand(const I2CBusCommand& command) {
         std::string errMsg = std::string("I2C operation failed: ") + esp_err_to_name(ret);
         return BusTransferResult(false, {}, ret, errMsg);
     }
+}
 }

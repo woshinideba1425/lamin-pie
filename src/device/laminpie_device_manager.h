@@ -23,6 +23,11 @@
 #define CAT(a, b) a ## b
 #define CONCAT(a, b) CAT(a, b)
 
+namespace laminpie::device {
+
+using DeviceEventType = system::event::DeviceEventType;
+using EventDispatcher = system::event::LaminPie_EventDispatcher<DeviceEventType>;
+using Event = system::event::Event<DeviceEventType>;
 class DeviceManager {
 public:
     // 单例模式实现
@@ -60,10 +65,10 @@ private:
     ~DeviceManager();
     
     // 处理事件的回调函数
-    void handleDeviceAdded(const Event& event);
-    void handleDeviceRemoved(const Event& event);
-    void handleBusScanComplete(const Event& event);
-    void handleDriverRegistered(const Event& event);
+    void handleDeviceAdded(const DeviceEventType& event);
+    void handleDeviceRemoved(const DeviceEventType& event);
+    void handleBusScanComplete(const DeviceEventType& event);
+    void handleDriverRegistered(const DeviceEventType& event);
     
     // 设备与驱动匹配
     void matchDriversWithDevice(std::shared_ptr<DeviceIdentifier> device);
@@ -95,7 +100,10 @@ private:
 };
 
 
-#define DEVICE_MANAGER DeviceManager::getInstance()
+
+}
+
+#define DEVICE_MANAGER laminpie::device::DeviceManager::getInstance()
 
 #define bus_register(bus_name, ...) \
     static bool bus_register_##bus_name = []() { \
@@ -127,4 +135,3 @@ private:
         } \
         return result; \
     }();
-

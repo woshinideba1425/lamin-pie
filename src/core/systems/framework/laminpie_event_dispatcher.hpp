@@ -10,8 +10,8 @@
 #include <unordered_map>
 #include <queue>
 #include <thread>
-#include "laminpie_system_event_type.hpp"
 #include "../laminpie_system_internal.h"
+#include "laminpie_system_event_type.hpp"
 #include "lvgl.h"
 
 
@@ -65,7 +65,7 @@ public:
         return id;
     }
 
-    uint32_t addEventListener(Laminpie_AppEventType ui_data, Ui_Update_Event_t ui_update_data){
+    uint32_t addEventListener(Laminpie_AppEventType ui_event_type, Ui_Update_Event_t ui_update_data){
         lv_obj_t *obj = ui_update_data.obj;
         lv_theme_t *theme = ui_update_data.theme;
         lv_event_code_t event = ui_update_data.event;

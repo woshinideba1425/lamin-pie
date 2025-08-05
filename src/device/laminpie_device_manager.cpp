@@ -3,7 +3,7 @@
 #include "esp_log.h"
 #include <algorithm>
 #include <memory>
-
+namespace laminpie::device {
 DeviceManager::DeviceManager() : _running(true), _initialized(false) {
     //初始桶数(bucket)指定
     _buses.reserve(10);       // 预期存储约10个总线
@@ -27,22 +27,22 @@ bool DeviceManager::start() {
     
     // 注册事件监听器
     _eventListenerIds.push_back(_eventDispatcher.addEventListener(
-        EventType::DEVICE_ADDED, 
+        DeviceEventType::kDeviceAdd, 
         [this](const Event& e) { this->handleDeviceAdded(e); }
     ));
     
     _eventListenerIds.push_back(_eventDispatcher.addEventListener(
-        EventType::DEVICE_REMOVED, 
+        DeviceEventType::kDeviceRemove, 
         [this](const Event& e) { this->handleDeviceRemoved(e); }
     ));
     
     _eventListenerIds.push_back(_eventDispatcher.addEventListener(
-        EventType::BUS_SCAN_COMPLETE, 
+        DeviceEventType::kBusScanComplete, 
         [this](const Event& e) { this->handleBusScanComplete(e); }
     ));
     
     _eventListenerIds.push_back(_eventDispatcher.addEventListener(
-        EventType::DRIVER_REGISTERED, 
+        DeviceEventType::kDriverRegistered, 
         [this](const Event& e) { this->handleDriverRegistered(e); }
     ));
     
@@ -50,7 +50,7 @@ bool DeviceManager::start() {
 
     // 为每个驱动发送注册事件
     for (const auto& driver : _drivers) {
-        auto event = std::make_shared<Event>(EventType::DRIVER_REGISTERED, driver->getName());
+        auto event = std::make_shared<Event>(DeviceEventType::kDriverRegistered, driver->getName());
         _eventDispatcher.dispatchEvent(event);
     }
 
@@ -60,7 +60,7 @@ bool DeviceManager::start() {
     }
     
     // 发送总线扫描完成事件
-    auto event = std::make_shared<Event>(EventType::BUS_SCAN_COMPLETE, "bus_scan_complete");
+    auto event = std::make_shared<Event>(DeviceEventType::kBusScanComplete, "bus_scan_complete");
     _eventDispatcher.dispatchEvent(event);
 
     // 创建设备管理器任务
@@ -113,7 +113,7 @@ void DeviceManager::scanToAddDevices() {
             }
         }
 
-        auto event = std::make_shared<DeviceEvent>(EventType::DEVICE_ADDED, device_list);
+        auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceAdd, device_list);
         _eventDispatcher.dispatchEvent(event);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
@@ -157,7 +157,7 @@ bool DeviceManager::registerDriver(std::shared_ptr<Driver> driver) {
     _drivers.push_back(driver);
 
     if (_initialized) {
-        auto event = std::make_shared<Event>(EventType::DRIVER_REGISTERED, driver->getName());
+        auto event = std::make_shared<Event>(DeviceEventType::kDriverRegistered, driver->getName());
         _eventDispatcher.dispatchEvent(event);
     }
     
@@ -223,7 +223,7 @@ void DeviceManager::matchDriversWithDevice(std::shared_ptr<DeviceIdentifier> dev
                             
                             // 触发设备就绪事件
                             auto readyEvent = std::make_shared<DeviceEvent>(
-                                EventType::DEVICE_READY,
+                                DeviceEventType::kDeviceReady,
                                 device
                             );
                             _eventDispatcher.dispatchEvent(readyEvent);
@@ -376,7 +376,7 @@ void DeviceManager::handleDriverRegistered(const Event& event) {
                             
                             // 触发设备就绪事件
                             auto readyEvent = std::make_shared<DeviceEvent>(
-                                EventType::DEVICE_READY,
+                                DeviceEventType::kDeviceReady,
                                 device
                             );
                             _eventDispatcher.dispatchEvent(readyEvent);
@@ -435,11 +435,12 @@ std::vector<std::shared_ptr<DeviceIdentifier>> DeviceManager::findDevicesByType(
 }
 
 void DeviceManager::notifyDeviceReady(std::shared_ptr<DeviceIdentifier> device) {
-    auto event = std::make_shared<DeviceEvent>(EventType::DEVICE_READY, device);
+    auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceReady, device);
     _eventDispatcher.dispatchEvent(event);
 }
 
 void DeviceManager::notifyDeviceRemoved(std::shared_ptr<DeviceIdentifier> device) {
-    auto event = std::make_shared<DeviceEvent>(EventType::DEVICE_REMOVED, device);
+    auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceRemove, device);
     _eventDispatcher.dispatchEvent(event);
+}
 }

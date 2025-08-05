@@ -42,7 +42,7 @@ bool LvDisplay::fontCalibrateMethod(StyleFont &target, const StyleSize *parent) 
 
     // Size
     CheckValueAndReturn(
-        target.size_px, StyleFont::FONT_SIZE_MIN, StyleFont::FONT_SIZE_MAX, false, "Invalid size"
+        static_cast<int>(target.size_px), StyleFont::FONT_SIZE_MIN, StyleFont::FONT_SIZE_MAX, false, "Invalid size"
     );
     // Font description
     if (font_resource == nullptr) {
@@ -57,10 +57,10 @@ process_height:
     // Height
     if (target.flags.enable_height_percent) {
         CheckNullAndReturn(parent, false, "Invalid parent size");
-        CheckValueAndReturn(target.height_percent, 1, 100, false, "Invalid height percent");
+        CheckValueAndReturn(static_cast<int>(target.height_percent), 1, 100, false, "Invalid height percent");
         target.height = (parent->height * target.height_percent) / 100;
     } else if (parent != nullptr) {
-        CheckValueAndReturn(target.height, 1, parent->height, false, "Invalid height");
+        CheckValueAndReturn(static_cast<int>(target.height), 1, parent->height, false, "Invalid height");
     }
 
     // Font description & size
@@ -92,7 +92,7 @@ bool LvDisplay::updateByNewData(void)
 const lv_font_t *LvDisplay::getFontBySize(uint8_t size_px) const
 {
     CheckValueAndReturn(
-        static_cast<uint8_t>(size_px), StyleFont::FONT_SIZE_MIN, StyleFont::FONT_SIZE_MAX, nullptr, "Invalid size"
+        static_cast<int>(size_px), StyleFont::FONT_SIZE_MIN, StyleFont::FONT_SIZE_MAX, nullptr, "Invalid size"
     );
 
     auto it = _size_font_map.find(size_px);

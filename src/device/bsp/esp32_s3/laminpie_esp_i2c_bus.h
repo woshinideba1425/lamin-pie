@@ -5,7 +5,12 @@
 #include "driver/i2c_types.h"
 #include "esp_err.h"
 #include <map>
-#include "event_dispatcher.h"
+#include "laminpie_event_dispatcher.hpp"
+
+namespace laminpie::device::bsp::esp32_s3 {
+using DeviceEventType = system::event::DeviceEventType;
+using EventDispatcher = system::event::LaminPie_EventDispatcher<DeviceEventType>;
+using Event = system::event::Event<DeviceEventType>;
 
 struct I2cDevDeleter {
     void operator()(i2c_master_dev_handle_t handle) const {
@@ -51,4 +56,5 @@ private:
     std::vector<uint8_t> device_addr_list_;
     EventDispatcher& _eventDispatcher = EventDispatcher::getInstance();
 };
+}
 #endif

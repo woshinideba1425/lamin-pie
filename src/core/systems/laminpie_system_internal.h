@@ -3,9 +3,6 @@
 #include "laminpie_conf.h"
 #include "../laminpie_internal.h"
 
-#ifdef __cplusplus
-#include "framework/laminpie_event_dispatcher.hpp"
-#endif
 #if !LAMINPIE_ENABLE_SYSTEMS
 #   error "LAMINPIE_ENABLE_SYSTEMS is not enabled, enable it in the menuconfig or lamin_conf.h"
 #endif

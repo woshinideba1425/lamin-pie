@@ -2,6 +2,8 @@
 #include "laminpie_log.hpp"
 #include "src/core/systems/laminpie_system_internal.h"
 
+#define RESOURCE_LOOP_COUNT_MAX     (1000)
+
 namespace laminpie::system::app {
 
 bool Laminpie_App_Base::StartRecordResource(void)
@@ -84,7 +86,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_screens_class_parent_map.clear();
         _resource_screen_count = 0;
         ret = false;
-        ESP_UTILS_LOGE("record screen fail");
+        SYSTEM_APP_LOG_ERROR("record screen fail");
     } else {
         SYSTEM_APP_LOG_DEBUG("record screen(%d): ", _resource_screen_count);
     }
@@ -111,7 +113,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_timers_cb_usr_map.clear();
         _resource_timer_count = 0;
         ret = false;
-        ESP_UTILS_LOGE("record timer fail");
+        SYSTEM_APP_LOG_ERROR("record timer fail");
     } else {
         SYSTEM_APP_LOG_DEBUG("record timer(%d): ", _resource_timer_count);
     }
@@ -134,7 +136,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_anims.clear();
         _resource_anims_var_exec_map.clear();
         _resource_anim_count = 0;
-        ESP_UTILS_LOGE("record animation fail");
+        SYSTEM_APP_LOG_ERROR("record animation fail");
     } else {
         SYSTEM_APP_LOG_DEBUG("record animation(%d): ", _resource_anim_count);
     }
@@ -176,7 +178,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (screen_it != _resource_screens.end()) {
             auto screen_map_it = _resource_screens_class_parent_map.find(screen_node);
             if (screen_map_it == _resource_screens_class_parent_map.end()) {
-                ESP_UTILS_LOGE("Screen class parent map not found");
+                SYSTEM_APP_LOG_ERROR("Screen class parent map not found");
             } else {
                 if ((screen_node->class_p == screen_map_it->second.first) &&
                         (screen_node->parent == screen_map_it->second.second)) {
@@ -194,7 +196,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        ESP_UTILS_LOGE("Clean screen loop count exceed max");
+        SYSTEM_APP_LOG_ERROR("Clean screen loop count exceed max");
     } else {
         SYSTEM_APP_LOG_DEBUG("Clean screen(%d), miss(%d): ", resource_clean_count, (int)(_resource_screen_count - resource_clean_count));
     }
@@ -210,7 +212,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (timer_it != _resource_timers.end()) {
             auto timer_map_it = _resource_timers_cb_usr_map.find(timer_node);
             if (timer_map_it == _resource_timers_cb_usr_map.end()) {
-                ESP_UTILS_LOGE("Timer cb usr map not found");
+                SYSTEM_APP_LOG_ERROR("Timer cb usr map not found");
             } else  {
                 if ((timer_map_it->second.first == timer_node->timer_cb) &&
                         (timer_map_it->second.second == timer_node->user_data)) {
@@ -228,7 +230,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        ESP_UTILS_LOGE("Clean timer loop count exceed max");
+        SYSTEM_APP_LOG_ERROR("Clean timer loop count exceed max");
     } else {
         SYSTEM_APP_LOG_DEBUG("Clean timer(%d), miss(%d): ", resource_clean_count, _resource_timer_count - resource_clean_count);
     }
@@ -244,7 +246,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (anim_it != _resource_anims.end()) {
             auto anim_map_it = _resource_anims_var_exec_map.find(anim_node);
             if (anim_map_it == _resource_anims_var_exec_map.end()) {
-                ESP_UTILS_LOGE("Animation var exec map not found");
+                SYSTEM_APP_LOG_ERROR("Animation var exec map not found");
             } else  {
                 if ((anim_map_it->second.first == anim_node->var) &&
                         (anim_map_it->second.second == anim_node->exec_cb)) {
@@ -252,7 +254,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
                         do_clean = true;
                         resource_clean_count++;
                     } else {
-                        ESP_UTILS_LOGE("Delete animation failed");
+                        SYSTEM_APP_LOG_ERROR("Delete animation failed");
                     }
                 } else {
                     SYSTEM_APP_LOG_DEBUG("Anim(@0x%p) information is not matched, skip", anim_node);
@@ -266,7 +268,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        ESP_UTILS_LOGE("Clean timer loop count exceed max");
+        SYSTEM_APP_LOG_ERROR("Clean timer loop count exceed max");
     } else {
         SYSTEM_APP_LOG_DEBUG("Clean anim(%d), miss(%d): ", resource_clean_count, _resource_anim_count - resource_clean_count);
     }

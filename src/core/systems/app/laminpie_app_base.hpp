@@ -7,12 +7,12 @@
 #include "lvgl.h"
 #include "lvgl/laminpie_lv_helper.hpp"
 #include "../laminpie_system_internal.h"
-#include "src/core/systems/framework/laminpie_system_event_type.hpp"
+#include "laminpie_event_dispatcher.hpp"
 #include "laminpie_app_navigation.hpp"
 
 namespace laminpie::system::app {
 typedef struct {
-    const char *name;
+    std::string name;
     laminpie::gui::StyleImage launcher_icon;
     laminpie::gui::StyleSize screen_size;
     struct {
@@ -46,7 +46,7 @@ public:
         return _id;
     }
 
-    const char *getName(void) const
+    const std::string &getName(void) const
     {
         return _core_active_data.name;
     }
@@ -83,13 +83,19 @@ protected:
 
 protected:
     /// @brief 用于注册app环节的代码执行
-    virtual void ONSetup() {}
-    virtual void ONCreate() = 0;  
-    virtual void ONLoop() = 0;
-    virtual void ONResume() = 0;
-    virtual void ONPause() = 0;
-    virtual void ONDestroy() = 0;
-    virtual void ONRunningBG() = 0;  
+    virtual void OnSetup() {}
+    /// @brief 用于创建app环节的代码执行
+    virtual void OnCreate() = 0;  
+    /// @brief 用于循环app环节的代码执行
+    virtual void OnLoop() = 0;
+    /// @brief 用于恢复app环节的代码执行
+    virtual void OnResume() = 0;
+    /// @brief 用于暂停app环节的代码执行
+    virtual void OnPause() = 0;
+    /// @brief 用于销毁app环节的代码执行
+    virtual void OnDestroy() = 0;
+    /// @brief 用于运行后台app环节的代码执行
+    virtual void OnRunningBG() = 0;  
     /**
      * @brief Start recording resources(screens, timers, and animations) manually.
      *

@@ -1,6 +1,6 @@
-#include "app_register.h"
+#include "laminpie_app_register.h"
 
-namespace LAMINATEPIE{
+namespace laminpie::system::app {
     int APP_Register::install(FreeRTOSAppBase* app, SIMPLEKV::SimpleKV_ESP* database, void* userData) 
     {
         if (app == nullptr) {
