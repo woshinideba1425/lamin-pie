@@ -39,47 +39,69 @@ public:
 
     virtual ~Laminpie_App_Base() = default;
 
-    bool checkInitialized(void) const;
+    bool CheckInitialized(void) const;
 
-    int getId(void) const
+    int GetId(void) const
     {
         return _id;
     }
 
-    const std::string &getName(void) const
+    const std::string &GetName(void) const
     {
         return _core_active_data.name;
     }
 
-    const laminpie::gui::StyleImage &getLauncherIcon(void) const
+    const laminpie::gui::StyleImage &GetLauncherIcon(void) const
     {
         return _core_active_data.launcher_icon;
     }
 
-    const lv_area_t &getVisualArea(void) const
+    const lv_area_t &GetVisualArea(void) const
     {
         return _app_style.calibrate_visual_area;
     }
 
-    const Laminpie_App_Base_Data_t &getCoreInitData(void) const
+    const Laminpie_App_Base_Data_t &GetCoreInitData(void) const
     {
         return _core_init_data;
     }
 
-    const Laminpie_App_Base_Data_t &getCoreActiveData(void) const
+    const Laminpie_App_Base_Data_t &GetCoreActiveData(void) const
     {
         return _core_active_data;
     }
 
-    Laminpie_Framework &getFramework(void) const
+    Laminpie_Framework &GetFramework(void) const
     {
         return _framework;
     }
-
+    
+    // 添加设置 flags 的公共方法
+    void SetSystemApp(bool isSystemApp) { _flags.is_system_app = isSystemApp; }
+    void SetRunning(bool isRunning) { _flags.is_running = isRunning; }
+    void SetResumed(bool isResumed) { _flags.is_resumed = isResumed; }
+    void SetDestroyed(bool isDestroyed) { _flags.is_destroyed = isDestroyed; }
+    void SetRegistered(bool isRegistered) { _flags.is_registered = isRegistered; }
+    void SetClosing(bool isClosing) { _flags.is_closing = isClosing; }
+    void SetRunningBG(bool isRunningBG) { _flags.is_runningbg = isRunningBG; }
+    void SetScreenSmall(bool isScreenSmall) { _flags.is_screen_small = isScreenSmall; }
+    void SetResourceRecording(bool isResourceRecording) { _flags.is_resource_recording = isResourceRecording; }
+    
+    // 添加获取 flags 的公共方法
+    bool IsSystemApp() const { return _flags.is_system_app; }
+    bool IsRunning() const { return _flags.is_running; }
+    bool IsResumed() const { return _flags.is_resumed; }
+    bool IsDestroyed() const { return _flags.is_destroyed; }
+    bool IsRegistered() const { return _flags.is_registered; }
+    bool IsClosing() const { return _flags.is_closing; }
+    bool IsRunningBG() const { return _flags.is_runningbg; }
+    bool IsScreenSmall() const { return _flags.is_screen_small; }
+    bool IsResourceRecording() const { return _flags.is_resource_recording; }
+    
 protected:
     event::LaminPie_EventDispatcher<event::Laminpie_App_Status_t> _event_dispatcher;
     bool notifyCoreClosed(void) const;
-    void setLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
+    void SetLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
 
 protected:
     /// @brief 用于注册app环节的代码执行
@@ -142,18 +164,18 @@ protected:
     Laminpie_Framework &_framework;
 
 private:
-    bool setVisualArea(const lv_area_t &area);
-    bool calibrateVisualArea(void);
-    bool initDefaultScreen(void);
-    bool cleanDefaultScreen(void);
-    bool saveRecentScreen(bool check_valid);
-    bool loadRecentScreen(void);
-    bool resetRecordResource(void);
-    bool enableAutoClean(void);
-    bool saveDisplayTheme(void);
-    bool loadDisplayTheme(void);
-    bool saveAppTheme(void);
-    bool loadAppTheme(void);
+    bool SetVisualArea(const lv_area_t &area);
+    bool CalibrateVisualArea(void);
+    bool InitDefaultScreen(void);
+    bool CleanDefaultScreen(void);
+    bool SaveRecentScreen(bool check_valid);
+    bool LoadRecentScreen(void);
+    bool ResetRecordResource(void);
+    bool EnableAutoClean(void);
+    bool SaveDisplayTheme(void);
+    bool LoadDisplayTheme(void);
+    bool SaveAppTheme(void);
+    bool LoadAppTheme(void);
     //Core
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;
@@ -168,6 +190,11 @@ private:
         uint8_t is_runningbg: 1;
         uint8_t is_screen_small: 1;
         uint8_t is_resource_recording: 1;
+        uint8_t is_system_app: 1;
+        uint8_t is_running: 1;
+        uint8_t is_resumed: 1;  
+        uint8_t is_destroyed: 1;
+        uint8_t is_registered: 1;
     } _flags;
     struct {
         int w;

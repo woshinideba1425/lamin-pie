@@ -1,2 +1,8 @@
 #include "laminpie_lv_helper.hpp"
 #include "laminpie_lv_object.hpp"
+#include "laminpie_lv_screen.hpp"
+#include "laminpie_lv_container.hpp"
+#include "laminpie_lv_animation.hpp"
+#include "laminpie_lv_canvas.hpp"
+#include "laminpie_lv_display.hpp"
+#include "laminpie_lv_timer.hpp"

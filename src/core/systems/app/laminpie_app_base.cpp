@@ -6,13 +6,21 @@
 
 namespace laminpie::system::app {
 
+// 添加事件回调函数实现
+static void onResizeScreenLoadedEventCallback(lv_event_t *e)
+{
+    // 这里可以根据需要实现屏幕加载事件的处理
+    // 目前只是一个占位符实现
+    (void)e;
+}
+
 bool Laminpie_App_Base::StartRecordResource(void)
 {
     lv_display_t *disp = nullptr;
     lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
-    utils::CheckFalseReturn(checkInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource", getName(), _id);
+    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource", GetName(), _id);
 
     // disp = _framework.getDisplayDevice();
     utils::CheckNullAndReturn(disp, false, "Invalid display");
@@ -32,7 +40,8 @@ bool Laminpie_App_Base::StartRecordResource(void)
     }
     _resource_head_screen_index = disp->screen_cnt - 1;
     _resource_head_timer = lv_timer_get_next(nullptr);
-    _resource_head_anim = (lv_anim_t *)_lv_ll_get_head(&LV_ANIM_LL_DEFAULT());
+    // 修复：使用正确的动画链表访问方式
+    _resource_head_anim = (lv_anim_t *)lv_ll_get_head(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll));
     _flags.is_resource_recording = true;
 
     return true;
@@ -48,8 +57,8 @@ bool Laminpie_App_Base::EndRecordResource(void)
     lv_anim_t *anim_node = nullptr;
     const lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
-    utils::CheckFalseReturn(checkInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) end record resource", getName(), _id);
+    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) end record resource", GetName(), _id);
 
     if (!_flags.is_resource_recording) {
         SYSTEM_APP_LOG_DEBUG("Recording resource is not started, please start first");
@@ -119,7 +128,8 @@ bool Laminpie_App_Base::EndRecordResource(void)
     }
 
     // Animation
-    anim_node = (lv_anim_t *)_lv_ll_get_head(&LV_ANIM_LL_DEFAULT());
+    // 修复：使用正确的动画链表访问方式
+    anim_node = (lv_anim_t *)lv_ll_get_head(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll));
     while ((anim_node != nullptr) && (anim_node != _resource_head_anim)) {
         // Record or update the record information of the animation
         _resource_anims_var_exec_map[anim_node] = {anim_node->var, anim_node->exec_cb};
@@ -130,7 +140,8 @@ bool Laminpie_App_Base::EndRecordResource(void)
         } else {
             SYSTEM_APP_LOG_DEBUG("Animation(@0x%p) is already recorded", anim_node);
         }
-        anim_node = (lv_anim_t *)_lv_ll_get_next(&LV_ANIM_LL_DEFAULT(), anim_node);
+        // 修复：使用正确的动画链表访问方式
+        anim_node = (lv_anim_t *)lv_ll_get_next(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll), anim_node);
     }
     if ((anim_node == nullptr) && (_resource_head_anim != nullptr)) {
         _resource_anims.clear();
@@ -153,8 +164,8 @@ bool Laminpie_App_Base::EndRecordResource(void)
 
 bool Laminpie_App_Base::CleanRecordResource(void)
 {
-    utils::CheckFalseReturn(checkInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean resource", getName(), _id);
+    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean resource", GetName(), _id);
 
     bool ret = true;
     bool do_clean = false;
@@ -165,7 +176,8 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     lv_timer_t *timer_node = nullptr;
     lv_anim_t *anim_node = nullptr;
 
-    disp = _core->getDisplayDevice();
+    // 修复：使用正确的显示设备获取方式
+    disp = lv_display_get_default();
     utils::CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen
@@ -238,7 +250,8 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     // Animation
     resource_loop_count = 0;
     resource_clean_count = 0;
-    anim_node = (lv_anim_t *)_lv_ll_get_head(&LV_ANIM_LL_DEFAULT());
+    // 修复：使用正确的动画链表访问方式
+    anim_node = (lv_anim_t *)lv_ll_get_head(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll));
     while ((anim_node != nullptr) && (_resource_anims.size() > 0) &&
             (resource_loop_count++ < RESOURCE_LOOP_COUNT_MAX)) {
         do_clean = false;
@@ -263,8 +276,9 @@ bool Laminpie_App_Base::CleanRecordResource(void)
                 _resource_anims_var_exec_map.erase(anim_map_it);
             }
         }
-        anim_node = do_clean ? (lv_anim_t *)_lv_ll_get_head(&LV_ANIM_LL_DEFAULT()) :
-                    (lv_anim_t *)_lv_ll_get_next(&LV_ANIM_LL_DEFAULT(), anim_node);
+        // 修复：使用正确的动画链表访问方式
+        anim_node = do_clean ? (lv_anim_t *)lv_ll_get_head(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll)) :
+                    (lv_anim_t *)lv_ll_get_next(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll), anim_node);
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
@@ -273,7 +287,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         SYSTEM_APP_LOG_DEBUG("Clean anim(%d), miss(%d): ", resource_clean_count, _resource_anim_count - resource_clean_count);
     }
 
-    utils::CheckFalseReturn(resetRecordResource(), false, "Reset record resource failed");
+    utils::CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
 
     return ret;
 }

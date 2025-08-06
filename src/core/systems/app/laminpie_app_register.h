@@ -12,7 +12,7 @@ namespace laminpie::system::app {
         bool isSystemApp = false;  // 添加系统应用标识
     };
 
-    class APP_Register {
+    class Laminpie_App_Register {
         private:
             int _id;
             typedef struct {
@@ -29,8 +29,8 @@ namespace laminpie::system::app {
             std::unordered_map <int, std::shared_ptr<Laminpie_AppSnapshot_t>> _id_app_snapshot_map;
 
         public:
-            APP_Register() : _id(0) {}
-            ~APP_Register() = default;
+            Laminpie_App_Register() : _id(0) {}
+            ~Laminpie_App_Register() = default;
 
 
             /**
@@ -63,7 +63,7 @@ namespace laminpie::system::app {
                 for (const auto& appEntry : _app_list) {
                     ESP_LOGI("APP_Register", "App ID: %d, App Name: %s, System App: %s", 
                                 appEntry.id, 
-                                appEntry.app->getName().c_str(), 
+                                appEntry.app->GetName().c_str(), 
                                 appEntry.isSystemApp ? "Yes" : "No");
                 }
                     return _app_list; 
