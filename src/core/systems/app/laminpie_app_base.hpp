@@ -80,18 +80,13 @@ public:
     //     return _framework;
     // }
     
-    virtual bool ProcessInstall(Laminpie_Framework *framework, int id);
-    virtual bool ProcessUninstall(void);
-    virtual bool ProcessCreate(void);
-    virtual bool ProcessResume(void);
-    virtual bool ProcessPause(void);
-    virtual bool ProcessClose(bool is_app_active);
+
 protected:
     LaminPie_EventDispatcher &_event_dispatcher;
     bool notifyCoreClosed(void) const;
     void SetLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
+    Laminpie_App_Status_t GetStatus(void) const { return _status; }
 
-protected:
     /// @brief 用于注册app环节的代码执行
     virtual void OnSetup() {}
     /// @brief 用于创建app环节的代码执行
@@ -152,6 +147,15 @@ protected:
     // Laminpie_Framework &_framework;
 
 private:
+    virtual bool beginExtra(void) { return true; }
+    virtual bool delExtra(void)   { return true; }
+    virtual bool ProcessInstall(Laminpie_Framework *framework, int id);
+    virtual bool ProcessUninstall(void);
+    virtual bool ProcessCreate(void);
+    virtual bool ProcessResume(void);
+    virtual bool ProcessPause(void);
+    virtual bool ProcessClose(bool is_app_active);    
+    
     bool SetVisualArea(const lv_area_t &area);
     bool CalibrateVisualArea(void);
     bool InitDefaultScreen(void);

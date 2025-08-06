@@ -1,13 +1,16 @@
 #include "laminpie_app_base.hpp"
+#include "laminpie_event_dispatcher.hpp"
 #include "laminpie_log.hpp"
 #include "src/core/systems/laminpie_system_internal.h"
+#include "style/laminpie_gui_style.hpp"
 
 #define RESOURCE_LOOP_COUNT_MAX     (1000)
 
 namespace laminpie::system::app {
 
-Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data, Laminpie_Framework &framework):
-    _framework(framework),
+Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
+    // _framework(framework),
+    _event_dispatcher(LaminPie_EventDispatcher::getInstance()),
     _core_init_data(data),
     _status(Laminpie_App_Status_t::kApp_Status_Uninstalled),
     _id(-1),
@@ -23,6 +26,221 @@ Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data, Lamin
     _resource_head_timer(nullptr),
     _resource_head_anim(nullptr)
 {
+}
+// bool Laminpie_App_Base::CheckInitialized(void) const{
+//     return (_id >= Laminpie_App_ID_Min) && (_framework != nullptr) &&
+//            (_framework->getAppManager().getInstalledApp(_id) == this);
+// }
+
+bool Laminpie_App_Base::notifyCoreClosed(void) const{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) notify core closed", GetName(), _id);
+
+    if (_flags.is_closing) {
+        return true;
+    }
+
+    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Status_t::kApp_Status_Closed, nullptr));    
+    return true;
+}
+
+void Laminpie_App_Base::SetLauncherIconImage(const StyleImage &icon_image){
+    _core_active_data.launcher_icon = icon_image;
+}
+
+bool Laminpie_App_Base::ProcessInstall(Laminpie_Framework *framework, int id){
+    CheckFalseReturn(CheckInitialized(), false, "Already initialized");
+    CheckNullAndReturn(framework, false, "Framework is invalid");
+    CheckNullAndReturn(_core_init_data.name, false, "App name is invalid");
+
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) install", _core_init_data.name, id);
+
+    _core_active_data = _core_init_data;
+    // _framework = framework;
+    _id = id;
+
+    try{
+        // framework->getCoreHome().calibrateCoreObjectSize(framework->getCoreData().screen_size, _core_active_data.screen_size);
+    }catch(const std::exception &e){
+        throw std::runtime_error("Calibrate screen size failed: " + std::string(e.what()));
+    }
+
+    if(beginExtra()){
+        _status = Laminpie_App_Status_t::kApp_Status_Created;
+    }else{
+        ProcessUninstall();
+        return false;
+    }
+
+    return true;
+}
+
+bool Laminpie_App_Base::ProcessUninstall(void){
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) uninstall", GetName(), _id);
+
+    // _framework = nullptr;
+    _core_active_data = {};
+    _status = Laminpie_App_Status_t::kApp_Status_Uninstalled;
+    _id = -1;
+    _flags = {};
+    _display_style = {};
+    _app_style = {};
+    _resource_timer_count = 0;
+    _resource_anim_count = 0;
+    _resource_head_screen_index = 0;
+    _resource_screen_count = 0;
+    if(_core_active_data.flags.enable_default_screen && checkLvObjIsValid(_active_screen)){
+        lv_obj_del(_active_screen);
+    }
+    _active_screen = nullptr;
+    _resource_head_timer = nullptr;
+    _resource_head_anim = nullptr;
+    _resource_screens.clear();
+    _resource_timers.clear();
+    _resource_anims.clear();
+
+    CheckFalseReturn(delExtra(), false, "Begin extra failed");
+    _status = Laminpie_App_Status_t::kApp_Status_Uninstalled;
+
+    return true;
+}
+
+bool Laminpie_App_Base::ProcessCreate(void){
+    bool ret = true;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) create", GetName(), _id);
+
+    CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen before run failed");
+    CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
+    CheckFalseReturn(StartRecordResource(), false, "Start record resource failed");
+    if(_core_active_data.flags.enable_default_screen){
+        CheckFalseReturn(InitDefaultScreen(), false, "Create active screen failed");
+    }
+    CheckFalseReturn(SaveDisplayTheme(), false, "Save display theme failed");
+
+    // if(!run()){
+    //     SYSTEM_APP_LOG_ERROR("Run app failed");
+    //     return false;
+    // }
+    if (!SaveRecentScreen(true)) {
+        SYSTEM_APP_LOG_ERROR("Save recent screen after run failed");
+        ret = false;
+    }
+    _status = Laminpie_App_Status_t::kApp_Status_Running;
+
+    if(!ret){
+        CheckFalseReturn(ProcessClose(true), false, "Close app failed");
+    }
+    return ret;
+}
+
+bool Laminpie_App_Base::ProcessResume(void)
+{
+    bool ret = true;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) resume", GetName(), _id);
+
+    CheckFalseReturn(LoadRecentScreen(), false, "Load recent screen failed");
+    CheckFalseReturn(LoadAppTheme(), false, "Load app theme failed");
+    CheckFalseReturn(StartRecordResource(), false, "Start record resource failed");
+    SYSTEM_APP_LOG_DEBUG("Do resume");
+    // if (!(ret = Resume())) {
+    //    SYSTEM_APP_LOG_ERROR("Resume app failed");
+    //}
+    CheckFalseReturn(EndRecordResource(), false, "End record resource failed");
+
+    _status = Laminpie_App_Status_t::kApp_Status_Running;
+
+    if(!ret){
+        CheckFalseReturn(ProcessClose(true), false, "Close app failed");
+    }
+    return ret;
+}
+
+bool Laminpie_App_Base::ProcessPause(void)
+{
+    bool ret = true;
+    
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) pause", GetName(), _id);
+
+    CheckFalseReturn(SaveAppTheme(), false, "Save app theme failed");
+    CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen failed");
+    CheckFalseReturn(LoadDisplayTheme(), false, "Load display theme failed");
+
+    _status = Laminpie_App_Status_t::kApp_Status_Paused;
+
+    if(!ret){
+        CheckFalseReturn(ProcessClose(true), false, "Close app failed");
+    }
+    return ret;
+}
+
+bool Laminpie_App_Base::ProcessClose(bool is_app_active)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) close", GetName(), _id);
+
+    if(_flags.is_closing){
+        return true;
+    }
+
+    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Status_t::kApp_Status_Closed, nullptr));
+    return true;
+}
+
+bool Laminpie_App_Base::SetVisualArea(const lv_area_t &area)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) set origin visual area[(%d,%d)-(%d,%d)]", GetName(),
+                   _id, area.x1, area.y1, area.x2, area.y2);
+
+    _app_style.origin_visual_area = area;
+
+    return true;
+}
+
+bool Laminpie_App_Base::CalibrateVisualArea(void)
+{
+    int visual_area_x = 0;
+    int visual_area_y = 0;
+    int visual_area_w = 0;
+    int visual_area_h = 0;
+    lv_area_t visual_area = _app_style.origin_visual_area;
+    const StyleSize &screen_size = _framework->getCoreData().screen_size;
+    const StyleSize &app_size = _framework->getCoreData().screen_size;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) calibrate visual area[origin: (%d,%d)-(%d,%d)]", GetName(),
+                   _id, visual_area.x1, visual_area.y1, visual_area.x2, visual_area.y2);
+
+    visual_area_w = visual_area.x2 - visual_area.x1 + 1;
+    visual_area_h = visual_area.y2 - visual_area.y1 + 1;
+    visual_area_x = visual_area.x1;
+    visual_area_y = visual_area.y1;
+    if (visual_area_w > app_size.width) {
+        visual_area_x = visual_area.x1 + (visual_area_w - app_size.width) / 2;
+    }
+    if (visual_area_h > app_size.height) {
+        visual_area_y = visual_area.y1 + (visual_area_h - app_size.height) / 2;
+    }
+    visual_area_w = std::min(visual_area_w, app_size.width);
+    visual_area_h = std::min(visual_area_h, app_size.height);
+    visual_area.x1 = visual_area_x;
+    visual_area.y1 = visual_area_y;
+    visual_area.x2 = visual_area_x + visual_area_w - 1;
+    visual_area.y2 = visual_area_y + visual_area_h - 1;
+
+    _app_style.calibrate_visual_area = visual_area;
+    _flags.is_screen_small = ((lv_area_get_height(&visual_area) < screen_size.height) ||
+                              (lv_area_get_width(&visual_area) < screen_size.width));
+
+    SYSTEM_APP_LOG_DEBUG("Calibrate visual area(%d,%d-%d,%d)", visual_area.x1, visual_area.y1, visual_area.x2, visual_area.y2);
+
+    return true;
 }
 
 bool Laminpie_App_Base::StartRecordResource(void)

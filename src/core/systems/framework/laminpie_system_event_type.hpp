@@ -91,10 +91,11 @@ enum class Laminpie_App_Status_t {
     kApp_Status_Destroyed,
 };
 
-struct App_Status_t : public Event<Laminpie_App_Status_t> {
-    std::shared_ptr<Laminpie_App_Status_t> app;
-    std::vector<std::shared_ptr<Laminpie_App_Status_t>> apps;
-    
+struct App_EventData_t : public Event<Laminpie_App_Status_t> {
+    int id;
+    Laminpie_App_Status_t type;
+    void *data;
+    App_EventData_t(int app_id, Laminpie_App_Status_t event_type, void *event_data)
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
