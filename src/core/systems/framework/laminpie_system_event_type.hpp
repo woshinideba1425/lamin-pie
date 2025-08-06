@@ -7,22 +7,32 @@
 #include "interface/device_types.h"
 #include "lvgl.h"
 #include "misc/lv_types.h"
-
+#include <typeindex>
 
 namespace laminpie::system::event {
 // 事件基类
 template<typename T>
 concept EnumType = std::is_enum_v<T>;
 
-template<EnumType T>
-struct Event {
-    T type;
-    std::string sourceId;
-    
-    Event(T t, const std::string& source) : type(t), sourceId(source) {}
-    virtual ~Event() = default;
+// 基础事件接口
+class IEvent {
+public:
+    virtual ~IEvent() = default;
+    virtual std::type_index getTypeIndex() const = 0;
 };
 
+// 具体事件类型的基类
+template<typename EnumType>
+class Event : public IEvent {
+public:
+    EnumType type;
+    
+    explicit Event(EnumType event_type) : type(event_type) {}
+    
+    std::type_index getTypeIndex() const override {
+        return std::type_index(typeid(EnumType));
+    }
+};
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////// Device event type /////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,10 +83,12 @@ enum class BootEventType {
 
 enum class Laminpie_App_Status_t {
     kApp_Status_Uninstalled = 0,
+    kApp_Status_Created,    
     kApp_Status_Running,
     kApp_Status_Paused,
     kApp_Status_Closed,
-    kApp_Status_RunningBg
+    kApp_Status_RunningBg,
+    kApp_Status_Destroyed,
 };
 
 struct App_Status_t : public Event<Laminpie_App_Status_t> {

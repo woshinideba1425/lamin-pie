@@ -6,12 +6,23 @@
 
 namespace laminpie::system::app {
 
-// 添加事件回调函数实现
-static void onResizeScreenLoadedEventCallback(lv_event_t *e)
+Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data, Laminpie_Framework &framework):
+    _framework(framework),
+    _core_init_data(data),
+    _status(Laminpie_App_Status_t::kApp_Status_Uninstalled),
+    _id(-1),
+    _flags{},
+    _display_style{},
+    _app_style{},
+    _resource_timer_count(0),
+    _resource_anim_count(0),
+    _resource_head_screen_index(0),
+    _resource_screen_count(0),
+    _last_screen(nullptr),
+    _active_screen(nullptr),
+    _resource_head_timer(nullptr),
+    _resource_head_anim(nullptr)
 {
-    // 这里可以根据需要实现屏幕加载事件的处理
-    // 目前只是一个占位符实现
-    (void)e;
 }
 
 bool Laminpie_App_Base::StartRecordResource(void)
@@ -19,11 +30,11 @@ bool Laminpie_App_Base::StartRecordResource(void)
     lv_display_t *disp = nullptr;
     lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
-    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource", GetName(), _id);
 
     // disp = _framework.getDisplayDevice();
-    utils::CheckNullAndReturn(disp, false, "Invalid display");
+    CheckNullAndReturn(disp, false, "Invalid display");
 
     if (_flags.is_resource_recording) {
         SYSTEM_APP_LOG_DEBUG("Recording resource is already started, don't start again");
@@ -57,7 +68,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
     lv_anim_t *anim_node = nullptr;
     const lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
-    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) end record resource", GetName(), _id);
 
     if (!_flags.is_resource_recording) {
@@ -66,7 +77,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
     }
 
     // disp = _framework->getDisplayDevice();
-    utils::CheckNullAndReturn(disp, false, "Invalid display");
+    CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen
     resource_loop_count = 0;
@@ -164,7 +175,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
 
 bool Laminpie_App_Base::CleanRecordResource(void)
 {
-    utils::CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean resource", GetName(), _id);
 
     bool ret = true;
@@ -178,7 +189,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
 
     // 修复：使用正确的显示设备获取方式
     disp = lv_display_get_default();
-    utils::CheckNullAndReturn(disp, false, "Invalid display");
+    CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen
     resource_loop_count = 0;
@@ -287,8 +298,16 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         SYSTEM_APP_LOG_DEBUG("Clean anim(%d), miss(%d): ", resource_clean_count, _resource_anim_count - resource_clean_count);
     }
 
-    utils::CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
+    CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
 
     return ret;
+}
+
+// 添加事件回调函数实现
+void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *e)
+{
+    // 这里可以根据需要实现屏幕加载事件的处理
+    // 目前只是一个占位符实现
+    (void)e;
 }
 }

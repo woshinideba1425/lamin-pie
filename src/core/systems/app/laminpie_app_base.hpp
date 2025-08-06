@@ -11,6 +11,10 @@
 #include "laminpie_app_navigation.hpp"
 
 namespace laminpie::system::app {
+using namespace laminpie::gui;
+using namespace laminpie::system::event;
+using namespace laminpie::utils;
+
 typedef struct {
     std::string name;
     laminpie::gui::StyleImage launcher_icon;
@@ -71,35 +75,19 @@ public:
         return _core_active_data;
     }
 
-    Laminpie_Framework &GetFramework(void) const
-    {
-        return _framework;
-    }
+    // Laminpie_Framework &GetFramework(void) const
+    // {
+    //     return _framework;
+    // }
     
-    // 添加设置 flags 的公共方法
-    void SetSystemApp(bool isSystemApp) { _flags.is_system_app = isSystemApp; }
-    void SetRunning(bool isRunning) { _flags.is_running = isRunning; }
-    void SetResumed(bool isResumed) { _flags.is_resumed = isResumed; }
-    void SetDestroyed(bool isDestroyed) { _flags.is_destroyed = isDestroyed; }
-    void SetRegistered(bool isRegistered) { _flags.is_registered = isRegistered; }
-    void SetClosing(bool isClosing) { _flags.is_closing = isClosing; }
-    void SetRunningBG(bool isRunningBG) { _flags.is_runningbg = isRunningBG; }
-    void SetScreenSmall(bool isScreenSmall) { _flags.is_screen_small = isScreenSmall; }
-    void SetResourceRecording(bool isResourceRecording) { _flags.is_resource_recording = isResourceRecording; }
-    
-    // 添加获取 flags 的公共方法
-    bool IsSystemApp() const { return _flags.is_system_app; }
-    bool IsRunning() const { return _flags.is_running; }
-    bool IsResumed() const { return _flags.is_resumed; }
-    bool IsDestroyed() const { return _flags.is_destroyed; }
-    bool IsRegistered() const { return _flags.is_registered; }
-    bool IsClosing() const { return _flags.is_closing; }
-    bool IsRunningBG() const { return _flags.is_runningbg; }
-    bool IsScreenSmall() const { return _flags.is_screen_small; }
-    bool IsResourceRecording() const { return _flags.is_resource_recording; }
-    
+    virtual bool ProcessInstall(Laminpie_Framework *framework, int id);
+    virtual bool ProcessUninstall(void);
+    virtual bool ProcessCreate(void);
+    virtual bool ProcessResume(void);
+    virtual bool ProcessPause(void);
+    virtual bool ProcessClose(bool is_app_active);
 protected:
-    event::LaminPie_EventDispatcher<event::Laminpie_App_Status_t> _event_dispatcher;
+    LaminPie_EventDispatcher &_event_dispatcher;
     bool notifyCoreClosed(void) const;
     void SetLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
 
@@ -114,8 +102,8 @@ protected:
     virtual void OnResume() = 0;
     /// @brief 用于暂停app环节的代码执行
     virtual void OnPause() = 0;
-    /// @brief 用于销毁app环节的代码执行
-    virtual void OnDestroy() = 0;
+    /// @brief 用于关闭app环节的代码执行
+    virtual void OnClose() = 0;
     /// @brief 用于运行后台app环节的代码执行
     virtual void OnRunningBG() = 0;  
     /**
@@ -161,7 +149,7 @@ protected:
      *
      */
     bool CleanRecordResource(void);
-    Laminpie_Framework &_framework;
+    // Laminpie_Framework &_framework;
 
 private:
     bool SetVisualArea(const lv_area_t &area);
@@ -176,10 +164,14 @@ private:
     bool LoadDisplayTheme(void);
     bool SaveAppTheme(void);
     bool LoadAppTheme(void);
+
+    static void onCleanResourceEventCallback(lv_event_t *e);
+    static void onResizeScreenLoadedEventCallback(lv_event_t *e);
+
     //Core
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;
-    event::Laminpie_App_Status_t _status;
+    Laminpie_App_Status_t _status;
     //Navigation
     AppNode _app_node;
     PageNode _home_page_node;

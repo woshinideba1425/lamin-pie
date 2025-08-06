@@ -52,6 +52,7 @@ namespace laminpie::system::app {
         // 遍历应用列表，找到匹配的应用并移除
         for (auto iter = _app_list.begin(); iter != _app_list.end(); ++iter) {
             if (iter->app == app) {
+                app->SetRegistered(false);
                 _app_list.erase(iter);
                 return true;
             }
@@ -73,8 +74,7 @@ namespace laminpie::system::app {
         for (auto& appEntry : _app_list) {
             if (appEntry.app == app) {
                 appEntry.isSystemApp = true;
-                // 注意：setSystemApp是Laminpie_App_Base的protected成员，外部不能调用
-                // app->setSystemApp(true);
+                app->SetSystemApp(true);
                 SYSTEM_APP_LOG_INFO("App %s is registered as system app", app->GetName().c_str());
                 return true;
             }
