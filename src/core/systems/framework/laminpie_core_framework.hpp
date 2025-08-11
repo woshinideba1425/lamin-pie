@@ -1,4 +1,5 @@
 #pragma once
+#include "laminpie_event_dispatcher.hpp"
 #include "laminpie_system_internal.h"
 #include "style/laminpie_gui_style.hpp"
 #include "laminpie_core_display.hpp"
@@ -10,24 +11,28 @@ typedef struct {
     gui::StyleSize screen_size;
     union {
         Laminpie_CoreHomeData_t home;
+        app::Laminpie_Core_HomeNode home_node;
         Laminpie_CoreHomeData_t display;
     };
     app::Laminpie_App_Manager manager;
+    app::Laminpie_App_Navigation navigation;
 } Laminpie_Core_Data_t;
 
 
 class Laminpie_Core_Framework {
 public:
-    Laminpie_Core_Framework(void);
+    Laminpie_Core_Framework(Laminpie_Core_Data_t &data);
     ~Laminpie_Core_Framework(void);
 
     static Laminpie_Core_Framework &GetInstance(void);
     const Laminpie_Core_Data_t &GetCoreData(void) const { return _core_data; }
     lv_display_t *GetDisplayDevice(void) const {return _display_device;}
+    event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _event_dispatcher;}
 
 protected:
     lv_display_t       *_display_device;
     Laminpie_Core_Data_t _core_data;
+    event::LaminPie_EventDispatcher _event_dispatcher;
 
 private:
     Laminpie_Core_Framework(const Laminpie_Core_Framework &) = delete;

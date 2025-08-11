@@ -47,7 +47,7 @@ void Laminpie_App_Base::SetLauncherIconImage(const StyleImage &icon_image){
     _core_active_data.launcher_icon = icon_image;
 }
 
-bool Laminpie_App_Base::ProcessInstall(Laminpie_Core_Framework *framework, int id){
+bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *framework, int id){
     CheckFalseReturn(CheckInitialized(), false, "Already initialized");
     CheckNullAndReturn(framework, false, "Framework is invalid");
     CheckNullAndReturn(_core_init_data.name, false, "App name is invalid");
@@ -112,7 +112,6 @@ bool Laminpie_App_Base::ProcessCreate(void){
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) create", GetName(), _id);
 
     CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen before run failed");
-    CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
 
     if (!SaveRecentScreen(true)) {
         SYSTEM_APP_LOG_ERROR("Save recent screen after run failed");
@@ -660,7 +659,7 @@ bool Laminpie_App_Base::SaveAppTheme(void)
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) save app theme", GetName(), _id);
 
-    display = _framework->getDisplayDevice();
+    display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
 
     theme = lv_disp_get_theme(display);
@@ -679,7 +678,7 @@ bool Laminpie_App_Base::LoadAppTheme(void)
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) load app theme", GetName(), _id);
 
-    display = _framework->getDisplayDevice();
+    display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
 
     CheckNullAndReturn(theme, false, "Invalid app theme");
@@ -717,7 +716,7 @@ void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *event)
 {
     Laminpie_App_Base *app = nullptr;
     lv_obj_t *screen = nullptr;
-    lv_area_t area = { 0 };
+    lv_area_t area = { 0 ,0, 0, 0};
 
     SYSTEM_APP_LOG_DEBUG("App resize screen loaded event callback");
     CheckNullAndReturn(event, false, "Invalid event");

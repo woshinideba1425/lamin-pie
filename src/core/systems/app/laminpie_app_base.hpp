@@ -33,9 +33,11 @@ constexpr int Laminpie_App_ID_Min = 1;
 class Laminpie_App_Manager;
 
 }
+
 namespace laminpie::system::framework {
 class Laminpie_Core_Framework;
 }
+
 namespace laminpie::system::app {
 
 class Laminpie_App_Base {
@@ -93,19 +95,19 @@ protected:
     Laminpie_App_Status_t GetStatus(void) const { return _status; }
 
     /// @brief 用于注册app环节的代码执行
-    virtual void OnSetup() {}
+    virtual bool OnSetup() { return true; }
     /// @brief 用于创建app环节的代码执行
-    virtual void OnCreate() = 0;  
+    virtual bool OnCreate() = 0;  
     /// @brief 用于循环app环节的代码执行
-    virtual void OnLoop() = 0;
+    virtual bool OnLoop() = 0;
     /// @brief 用于恢复app环节的代码执行
-    virtual void OnResume() = 0;
+    virtual bool OnResume() = 0;
     /// @brief 用于暂停app环节的代码执行
-    virtual void OnOnPause() = 0;
+    virtual bool OnOnPause() = 0;
     /// @brief 用于关闭app环节的代码执行
-    virtual void OnClose() = 0;
+    virtual bool OnClose() = 0;
     /// @brief 用于运行后台app环节的代码执行
-    virtual void OnRunningBG() = 0;  
+    virtual bool OnRunningBG() = 0;  
     /**
      * @brief Start recording resources(screens, timers, and animations) manually.
      *

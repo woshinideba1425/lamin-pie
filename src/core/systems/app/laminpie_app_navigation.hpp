@@ -48,10 +48,11 @@ struct Laminpie_App_Node{
 using AppNode = Laminpie_App_Node::Ptr;
 using PageNode = Laminpie_Page_Node::PagePtr;
 
+using Laminpie_Core_HomeNode = Laminpie_App_Node::Ptr;
 class Laminpie_App_Navigation{
 public:
 
-    Laminpie_App_Navigation(AppNode root);
+    Laminpie_App_Navigation(Laminpie_Core_HomeNode root);
 
     // 应用导航方法
     bool NavigateToApp(const std::string& appId);
@@ -67,15 +68,17 @@ public:
     bool NavigateToPreviousPage();
 
     // 获取当前状态
-    AppNode GetCurrentApp() const { return _current_app; }
-    PageNode GetCurrentPage() const { return _current_page; }
+    AppNode GetCurrentAppNode() const { return _current_app; }
+    PageNode GetCurrentPageNode() const { return _current_page; }
     
     // 注册应用节点
-    void RegisterApp(AppNode app);
-    
+    void RegisterAppNode(AppNode app);
+    void UnregisterAppNode(AppNode app);
     void SetAppRelationship(const std::string& parentId, const std::string& childId);
+
+    Laminpie_Core_HomeNode NavigateToHome();
 private:
-    AppNode _root_app;
+    Laminpie_Core_HomeNode _root_home;
     AppNode _current_app;
     PageNode _current_page;
     std::vector<AppNode> _app_node_list;

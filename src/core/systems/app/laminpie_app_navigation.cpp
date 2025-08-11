@@ -3,12 +3,12 @@
 
 namespace laminpie::system::app {
 
-Laminpie_App_Navigation::Laminpie_App_Navigation(AppNode root)
-: _root_app(root), _current_app(root), _current_page(nullptr), _app_node_list()
+Laminpie_App_Navigation::Laminpie_App_Navigation(Laminpie_Core_HomeNode root)
+: _root_home(root), _current_app(root), _current_page(nullptr), _app_node_list()
     {
-    if(_root_app) {
+    if(_root_home) {
             _app_node_list.push_back(root);
-        SYSTEM_APP_LOG_INFO("Navigation system initialized with root app: %s", std::string(_root_app->appId).c_str());
+        SYSTEM_APP_LOG_INFO("Navigation system initialized with root app: %s", std::string(_root_home->appId).c_str());
     } else {
         SYSTEM_APP_LOG_WARN("Navigation system initialized without a root app");
     }
@@ -50,7 +50,7 @@ bool Laminpie_App_Navigation::NavigateToApp(const std::string& appId)
 
 bool Laminpie_App_Navigation::NavigateBackToParentApp()
     {
-    if (!_current_app || _current_app == _root_app) {
+    if (!_current_app || _current_app == _root_home) {
         SYSTEM_APP_LOG_WARN("Cannot navigate back: already at root or invalid state");
         return false;
     }
@@ -246,7 +246,7 @@ bool Laminpie_App_Navigation::NavigateToPreviousPage()
     return true;
 }
 
-void Laminpie_App_Navigation::RegisterApp(AppNode app)
+void Laminpie_App_Navigation::RegisterAppNode(AppNode app)
 {
     if (!app) {
         SYSTEM_APP_LOG_ERROR("Cannot register null app");
@@ -271,11 +271,17 @@ void Laminpie_App_Navigation::RegisterApp(AppNode app)
     
     // If this is the first app, make it root and current
     if (_app_node_list.size() == 1) {
-        _root_app = app;
+        _root_home = app;
         _current_app = app;
         SYSTEM_APP_LOG_INFO("Set as root and current app");
-            }
-        }
+    }
+}
+
+void Laminpie_App_Navigation::UnregisterAppNode(AppNode app)
+{
+    _app_node_list.erase(std::remove(_app_node_list.begin(), _app_node_list.end(), app), _app_node_list.end());
+    SYSTEM_APP_LOG_INFO("Unregistered app: %s", std::string(app->appId).c_str());
+}
 
 void Laminpie_App_Navigation::SetAppRelationship(const std::string& parentId, const std::string& childId)
 {
@@ -333,4 +339,14 @@ PageNode Laminpie_App_Navigation::FindPage(const std::string& pageId) const
     return nullptr;
 }
 
+Laminpie_Core_HomeNode Laminpie_App_Navigation::NavigateToHome(){
+    if (!_root_home) {
+        SYSTEM_APP_LOG_ERROR("Cannot navigate to home: no root home");
+        return nullptr;
+    }
+
+    _current_app = _root_home;
+    _current_page = nullptr;
+    return _root_home;
+}
 } // namespace laminpie::system::app

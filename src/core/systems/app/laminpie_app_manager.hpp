@@ -2,87 +2,65 @@
 #include <vector>
 #include "laminpie_app_base.hpp"
 #include "laminpie_app_register.h"
+#include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
+#include "laminpie_app_navigation.hpp"
 
 namespace laminpie::system::app {
-    enum AppState {
-        ON_CREATE,      // 应用创建状态
-        ON_RESUME,      // 应用恢复到前台状态
-        ON_RUNNING,     // 应用在前台运行状态
-        ON_PAUSE,       // 应用暂停状态
-        ON_DESTROY,     // 应用销毁状态
-        ON_BACKGROUND,  // 应用在后台运行状态
-    };
+struct Laminpie_AppEntry {
+    app::Laminpie_App_Base* app;
+    Laminpie_App_Status_t app_state;
+    Laminpie_App_Navigation_Type_t navigation_type;
+};    
 
-    class Laminpie_App_Manager : public Laminpie_App_Register {
-    public:
-        struct AppEntry {
-            app::Laminpie_App_Base* app;
-            AppState state;
-            std::chrono::steady_clock::time_point lastStateChangeTime;  // 记录状态改变的时间
-            bool hasResumedBefore = false;
-        };
+typedef struct {
+    struct {
+        int max_running_num;
+    } app;
+    struct {
+        uint8_t enable_app_save_snapshot: 1;
+    } flags;
+} Laminpie_App_ManagerData_t;
 
-        Laminpie_App_Manager() : _foreground_app(nullptr) {}
-        
-        ~Laminpie_App_Manager() {
-            destroyAllApps();
-        }
+class Laminpie_App_Manager : public Laminpie_App_Register {
+public:
+    Laminpie_App_Manager(framework::Laminpie_Core_Framework &framework, Laminpie_App_ManagerData_t &data);
+    
+    ~Laminpie_App_Manager();
 
-        void app_manager_init() {
-            // xTaskCreatePinnedToCore(updateTaskFunction, "MUpdateTask", 4096, this, 5, &_updateTaskHandle, 1);
-        }
+    bool StartApp(app::Laminpie_App_Base* app);
+    bool MoveAppToBackground(Laminpie_App_Base* app);
+    bool PauseApp(Laminpie_App_Base* app);
+    bool DestroyApp(Laminpie_App_Base* app);
+    void DestroyAllApps();
+    void Update();
+    bool IsAppRunning(Laminpie_App_Base* app) const;
+    Laminpie_App_Base* GetForegroundApp() const;
+    bool IsForegroundAppRunning() const;
 
-        // 持续更新应用状态的 FreeRTOS 任务函数
-        static void updateTaskFunction(void* param) {
-            Laminpie_App_Manager* appManager = static_cast<Laminpie_App_Manager*>(param);
-            while (true) {
-                appManager->update();  // 调用 update 函数
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));  // 每50毫秒调用一次 update()
-            }
-        }
+protected:
+    LaminPie_EventDispatcher &_event_dispatcher;
 
-        // 启动一个应用，并将其设为前台应用
-        bool startApp(app::Laminpie_App_Base* app, size_t stack_size = 3096) {
+    virtual bool ProcessAppRunExtra(Laminpie_App_Base *app)    { return true; }
+    virtual bool ProcessAppResumeExtra(Laminpie_App_Base *app) { return true; }
+    virtual bool ProcessAppPauseExtra(Laminpie_App_Base *app)  { return true; }
+    virtual bool ProcessAppCloseExtra(Laminpie_App_Base *app)  { return true; }
+    virtual bool ProcessNavigationEvent(Laminpie_App_Navigation_Type_t type) { return true; };
 
-            return true;
-        }
+    bool ProcessAppRun(Laminpie_App_Base *app);
+    bool ProcessAppResume(Laminpie_App_Base *app);
+    bool ProcessAppPause(Laminpie_App_Base *app);
+    bool ProcessAppClose(Laminpie_App_Base *app);
+    bool SaveAppSnapshot(Laminpie_App_Base *app);
+    bool ReleaseAppSnapshot(Laminpie_App_Base *app);
+    void ResetActiveApp(void);
 
-        // 将应用移至后台运行
-        bool moveAppToBackground(Laminpie_App_Base* app) {
+    framework::Laminpie_Core_Framework &_framework;
+    const Laminpie_App_ManagerData_t &_app_manager_data;
 
-            return false;
-        }
-
-        bool pauseApp(Laminpie_App_Base* app) {
-            return false;
-        }
-
-        bool destroyApp(Laminpie_App_Base* app) {
-            return false;
-        }
-
-        void destroyAllApps() {
-        }
-
-        void update() {
-            
-        }
-
-        bool isAppRunning(Laminpie_App_Base* app) const {
-
-        }
-
-        Laminpie_App_Base* getForegroundApp() const {
-
-        }
-
-        bool isForegroundAppRunning() const {
-            return false;
-        }
-
-    private:
-        std::vector<AppEntry> _running_apps;   // 运行中的应用列表
-        Laminpie_App_Base* _foreground_app;      // 当前前台应用
-    };
+private:
+    std::vector<Laminpie_AppEntry> _running_apps;   // 运行中的应用列表
+    Laminpie_App_Base* _foreground_app;      // 当前前台应用
+    Laminpie_App_Navigation _navigation;
+};
 }
