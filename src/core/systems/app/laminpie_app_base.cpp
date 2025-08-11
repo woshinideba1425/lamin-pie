@@ -1,15 +1,14 @@
+#include "laminpie_core_framework.hpp"
 #include "laminpie_app_base.hpp"
 #include "laminpie_event_dispatcher.hpp"
 #include "laminpie_log.hpp"
 #include "src/core/systems/laminpie_system_internal.h"
 #include "style/laminpie_gui_style.hpp"
-
 #define RESOURCE_LOOP_COUNT_MAX     (1000)
 
 namespace laminpie::system::app {
 
 Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
-    // _framework(framework),
     _event_dispatcher(LaminPie_EventDispatcher::getInstance()),
     _core_init_data(data),
     _status(Laminpie_App_Status_t::kApp_Status_Uninstalled),
@@ -48,7 +47,7 @@ void Laminpie_App_Base::SetLauncherIconImage(const StyleImage &icon_image){
     _core_active_data.launcher_icon = icon_image;
 }
 
-bool Laminpie_App_Base::ProcessInstall(Laminpie_Framework *framework, int id){
+bool Laminpie_App_Base::ProcessInstall(Laminpie_Core_Framework *framework, int id){
     CheckFalseReturn(CheckInitialized(), false, "Already initialized");
     CheckNullAndReturn(framework, false, "Framework is invalid");
     CheckNullAndReturn(_core_init_data.name, false, "App name is invalid");
@@ -114,16 +113,7 @@ bool Laminpie_App_Base::ProcessCreate(void){
 
     CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen before run failed");
     CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
-    CheckFalseReturn(StartRecordResource(), false, "Start record resource failed");
-    if(_core_active_data.flags.enable_default_screen){
-        CheckFalseReturn(InitDefaultScreen(), false, "Create active screen failed");
-    }
-    CheckFalseReturn(SaveDisplayTheme(), false, "Save display theme failed");
 
-    // if(!run()){
-    //     SYSTEM_APP_LOG_ERROR("Run app failed");
-    //     return false;
-    // }
     if (!SaveRecentScreen(true)) {
         SYSTEM_APP_LOG_ERROR("Save recent screen after run failed");
         ret = false;
@@ -145,12 +135,6 @@ bool Laminpie_App_Base::ProcessResume(void)
 
     CheckFalseReturn(LoadRecentScreen(), false, "Load recent screen failed");
     CheckFalseReturn(LoadAppTheme(), false, "Load app theme failed");
-    CheckFalseReturn(StartRecordResource(), false, "Start record resource failed");
-    SYSTEM_APP_LOG_DEBUG("Do resume");
-    // if (!(ret = Resume())) {
-    //    SYSTEM_APP_LOG_ERROR("Resume app failed");
-    //}
-    CheckFalseReturn(EndRecordResource(), false, "End record resource failed");
 
     _status = Laminpie_App_Status_t::kApp_Status_Running;
 
@@ -210,8 +194,8 @@ bool Laminpie_App_Base::CalibrateVisualArea(void)
     int visual_area_w = 0;
     int visual_area_h = 0;
     lv_area_t visual_area = _app_style.origin_visual_area;
-    const StyleSize &screen_size = _framework->getCoreData().screen_size;
-    const StyleSize &app_size = _framework->getCoreData().screen_size;
+    const StyleSize &screen_size = _framework->GetCoreData().screen_size;
+    const StyleSize &app_size = _framework->GetCoreData().screen_size;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) calibrate visual area[origin: (%d,%d)-(%d,%d)]", GetName(),
@@ -521,11 +505,233 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     return ret;
 }
 
-// 添加事件回调函数实现
-void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *e)
+bool Laminpie_App_Base::InitDefaultScreen(void)
 {
-    // 这里可以根据需要实现屏幕加载事件的处理
-    // 目前只是一个占位符实现
-    (void)e;
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) init default screen", GetName(), _id);
+
+    _active_screen = lv_obj_create(nullptr);
+    CheckNullAndReturn(_active_screen, false, "Create default screen failed");
+
+    lv_scr_load(_active_screen);
+
+    return true;
 }
+
+bool Laminpie_App_Base::CleanDefaultScreen(void)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean default active screen", GetName(), _id);
+
+    if (checkLvObjIsValid(_active_screen)) {
+        lv_obj_del(_active_screen);
+    } else {
+        SYSTEM_APP_LOG_WARN("Active screen is already cleaned");
+    }
+    _active_screen = nullptr;
+
+    return true;
+}
+
+
+bool Laminpie_App_Base::SaveRecentScreen(bool check_valid)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save recent screen", GetName(), _id);
+
+    lv_obj_t *active_screen = lv_disp_get_scr_act(_framework->GetDisplayDevice());
+    CheckNullAndReturn(active_screen, false, "Invalid active screen");
+
+    if (check_valid) {
+        CheckFalseReturn(active_screen != _last_screen, false, "No app screen");
+    }
+    _active_screen = active_screen;
+    _last_screen = active_screen;
+
+    return true;
+}
+
+bool Laminpie_App_Base::LoadRecentScreen(void)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load recent screen", GetName(), _id);
+
+    // TODO
+    // if (_flags.is_screen_small) {
+    //     // Create a temp screen to recolor the background
+    //     ESP_UTILS_CHECK_FALSE_RETURN(createAndloadTempScreen(), false, "Create temp screen failed");
+    // }
+
+    CheckFalseReturn(checkLvObjIsValid(_active_screen), false, "Invalid active screen");
+    lv_scr_load(_active_screen);
+
+    // if (_flags.is_screen_small) {
+    //     ESP_UTILS_CHECK_FALSE_RETURN(delTempScreen(), false, "Delete temp screen failed");
+    // }
+
+    return true;
+}
+
+bool Laminpie_App_Base::ResetRecordResource(void)
+{
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) reset record resource", GetName(), _id);
+
+    // Screen
+    _resource_screen_count = 0;
+    _resource_screens.clear();
+    _resource_screens_class_parent_map.clear();
+
+    // Timer
+    _resource_timer_count = 0;
+    _resource_timers.clear();
+    _resource_timers_cb_usr_map.clear();
+
+    // Animation
+    _resource_anim_count = 0;
+    _resource_anims.clear();
+    _resource_anims_var_exec_map.clear();
+
+    _flags.is_resource_recording = false;
+
+    return true;
+}
+
+bool Laminpie_App_Base::EnableAutoClean(void)
+{
+    lv_obj_t *last_screen = _framework->GetDisplayDevice()->scr_to_load;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) enable auto clean", GetName(), _id);
+
+    // Check if the last screen is valid, if not, use the active screen
+    if (last_screen == nullptr) {
+        last_screen = _active_screen;
+    }
+    SYSTEM_APP_LOG_DEBUG("Clean resource when screen(0x%p) loaded", last_screen);
+
+    CheckFalseReturn(checkLvObjIsValid(last_screen), false, "Invalid last screen");
+    lv_obj_add_event_cb(last_screen, onCleanResourceEventCallback, LV_EVENT_SCREEN_UNLOADED, this);
+
+    return true;
+}
+
+bool Laminpie_App_Base::SaveDisplayTheme(void)
+{
+    lv_display_t *display = nullptr;
+    lv_theme_t *theme = nullptr;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save display theme", GetName(), _id);
+
+    display = _framework->GetDisplayDevice();
+    CheckNullAndReturn(display, false, "Invalid display");
+
+    theme = lv_disp_get_theme(display);
+    CheckNullAndReturn(theme, false, "Invalid display theme");
+
+    _display_style.theme = theme;
+
+    return true;
+}
+
+bool Laminpie_App_Base::LoadDisplayTheme(void)
+{
+    lv_display_t *display = nullptr;
+    lv_theme_t *&theme = _display_style.theme;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load display theme", GetName(), _id);
+
+    display = _framework->GetDisplayDevice();
+    CheckNullAndReturn(display, false, "Invalid display");
+
+    CheckNullAndReturn(theme, false, "Invalid display theme");
+    lv_disp_set_theme(display, theme);
+
+    return true;
+}
+
+bool Laminpie_App_Base::SaveAppTheme(void)
+{
+    lv_display_t *display = nullptr;
+    lv_theme_t *theme = nullptr;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save app theme", GetName(), _id);
+
+    display = _framework->getDisplayDevice();
+    CheckNullAndReturn(display, false, "Invalid display");
+
+    theme = lv_disp_get_theme(display);
+    CheckNullAndReturn(theme, false, "Invalid app theme");
+
+    _app_style.theme = theme;
+
+    return true;
+}
+
+bool Laminpie_App_Base::LoadAppTheme(void)
+{
+    lv_display_t *display = nullptr;
+    lv_theme_t *&theme = _display_style.theme;
+
+    CheckFalseReturn(CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load app theme", GetName(), _id);
+
+    display = _framework->getDisplayDevice();
+    CheckNullAndReturn(display, false, "Invalid display");
+
+    CheckNullAndReturn(theme, false, "Invalid app theme");
+    lv_disp_set_theme(display, theme);
+
+    return true;
+}
+
+void Laminpie_App_Base::onCleanResourceEventCallback(lv_event_t *event)
+{
+    Laminpie_App_Base *app = nullptr;
+
+    SYSTEM_APP_LOG_DEBUG("App clean resource event callback");
+    CheckNullAndReturn(event, false, "Invalid event");
+
+    app = (Laminpie_App_Base *)lv_event_get_user_data(event);
+    CheckNullAndReturn(app, false, "Invalid app");
+
+    SYSTEM_APP_LOG_DEBUG("Clean app(%s: %d) resources", app->GetName(), app->_id);
+    CheckFalseReturn(app->CheckInitialized(), false, "Not initialized");
+
+    if (!app->CleanResource()) {
+        SYSTEM_APP_LOG_ERROR("Clean resource failed");
+    }
+    if (app->_core_active_data.flags.enable_recycle_resource) {
+        if (!app->CleanRecordResource()) {
+            SYSTEM_APP_LOG_ERROR("Clean record resource failed");
+        }
+    } else if (app->_core_active_data.flags.enable_default_screen && !app->CleanDefaultScreen()) {
+        SYSTEM_APP_LOG_ERROR("Clean default screen failed");
+    }
+}
+
+void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *event)
+{
+    Laminpie_App_Base *app = nullptr;
+    lv_obj_t *screen = nullptr;
+    lv_area_t area = { 0 };
+
+    SYSTEM_APP_LOG_DEBUG("App resize screen loaded event callback");
+    CheckNullAndReturn(event, false, "Invalid event");
+
+    app = (Laminpie_App_Base *)lv_event_get_user_data(event);
+    screen = (lv_obj_t *)lv_event_get_target(event);
+    CheckNullAndReturn(app, false, "Invalid app");
+    CheckNullAndReturn(screen, false, "Invalid screen");
+
+    CheckFalseReturn(app->CheckInitialized(), false, "Not initialized");
+    SYSTEM_APP_LOG_DEBUG("Resize app(%s: %d) screen", app->GetName(), app->_id);
+
+    area = app->GetVisualArea();
+    lv_obj_set_pos(screen, area.x1, area.y1);
+}
+
 }

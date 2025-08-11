@@ -31,7 +31,12 @@ typedef struct {
 constexpr int Laminpie_App_ID_Min = 1;
 
 class Laminpie_App_Manager;
-class Laminpie_Framework;
+
+}
+namespace laminpie::system::framework {
+class Laminpie_Core_Framework;
+}
+namespace laminpie::system::app {
 
 class Laminpie_App_Base {
 public:
@@ -75,10 +80,10 @@ public:
         return _core_active_data;
     }
 
-    // Laminpie_Framework &GetFramework(void) const
-    // {
-    //     return _framework;
-    // }
+    framework::Laminpie_Core_Framework *GetFramework(void) const
+    {
+        return _framework;
+    }
     
 
 protected:
@@ -96,7 +101,7 @@ protected:
     /// @brief 用于恢复app环节的代码执行
     virtual void OnResume() = 0;
     /// @brief 用于暂停app环节的代码执行
-    virtual void OnPause() = 0;
+    virtual void OnOnPause() = 0;
     /// @brief 用于关闭app环节的代码执行
     virtual void OnClose() = 0;
     /// @brief 用于运行后台app环节的代码执行
@@ -112,7 +117,7 @@ protected:
      *       area
      * @note This function should be called before creating any resources, including screens (`lv_obj_create(NULL)`),
      *       animations (`lv_anim_start()`), and timers (`lv_timer_create()`)
-     * @note This function should not be called in the `run()` and `pause()` functions.
+     * @note This function should not be called in the `OnCreate()` and `OnPause()` functions.
      *
      * @return true if successful, otherwise false
      *
@@ -124,7 +129,7 @@ protected:
      *
      * @note This function should be called after creating any resources, including screens (`lv_obj_create(NULL)`),
      *       animations (`lv_anim_start()`), and timers (`lv_timer_create()`)
-     * @note This function should not be called in the `run()` and `pause()` functions.
+     * @note This function should not be called in the `OnCreate()` and `OnPause()` functions.
      *
      * @return true if successful, otherwise false
      *
@@ -133,7 +138,7 @@ protected:
 
     /**
      * @brief Cleanup all recorded resources(screens, timers, and animations) manually. These resources are recorded in
-     *        app's `run()` and `pause()` functions, or between the `startRecordResource()` and `stopRecordResource()`
+     *        app's `OnCreate()` and `OnPause()` functions, or between the `startRecordResource()` and `stopRecordResource()`
      *        functions.
      *
      * @note If the `enable_recycle_resource` flag in `ESP_Brookesia_CoreAppData_t` is set, when app closes, the core will
@@ -144,12 +149,29 @@ protected:
      *
      */
     bool CleanRecordResource(void);
-    // Laminpie_Framework &_framework;
+
+    framework::Laminpie_Core_Framework *_framework;
+
+    /**
+     * @brief Called when the app starts to close. The app can perform extra resource cleanup here.
+     *
+     * @note If there are resources that not recorded by the core (not created in the `OnCreate()` and `OnPause()` functions,
+     *       or between the `startRecordResource()` and `stopRecordResource()` functions), the app should call this
+     *       function to cleanup these gui resources manually. This function is not conflicted with the
+     *       `CleanRecordResource()` function.
+     *
+     * @return true if successful, otherwise false
+     *
+     */
+    virtual bool CleanResource(void)
+    {
+        return true;
+    }
 
 private:
     virtual bool beginExtra(void) { return true; }
     virtual bool delExtra(void)   { return true; }
-    virtual bool ProcessInstall(Laminpie_Framework *framework, int id);
+    virtual bool ProcessInstall(framework::Laminpie_Core_Framework *framework, int id);
     virtual bool ProcessUninstall(void);
     virtual bool ProcessCreate(void);
     virtual bool ProcessResume(void);
@@ -187,10 +209,6 @@ private:
         uint8_t is_screen_small: 1;
         uint8_t is_resource_recording: 1;
         uint8_t is_system_app: 1;
-        uint8_t is_running: 1;
-        uint8_t is_resumed: 1;  
-        uint8_t is_destroyed: 1;
-        uint8_t is_registered: 1;
     } _flags;
     struct {
         int w;

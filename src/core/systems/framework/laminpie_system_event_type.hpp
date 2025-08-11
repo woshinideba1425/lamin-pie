@@ -53,10 +53,10 @@ struct DeviceEvent : public Event<DeviceEventType> {
     std::vector<std::shared_ptr<DeviceIdentifier>> devices;
     
     DeviceEvent(DeviceEventType t, std::shared_ptr<DeviceIdentifier> dev) 
-        : Event<DeviceEventType>(t, dev->id), device(dev) {}
+        : Event<DeviceEventType>(t), device(dev) {}
         
     DeviceEvent(DeviceEventType t, const std::vector<std::shared_ptr<DeviceIdentifier>>& devList)
-        : Event<DeviceEventType>(t, "device_list"), devices(devList) {
+        : Event<DeviceEventType>(t), devices(devList) {
         if (!devList.empty()) {
             device = devList[0];
         }
@@ -96,6 +96,7 @@ struct App_EventData_t : public Event<Laminpie_App_Status_t> {
     Laminpie_App_Status_t type;
     void *data;
     App_EventData_t(int app_id, Laminpie_App_Status_t event_type, void *event_data)
+        : Event<Laminpie_App_Status_t>(event_type), id(app_id), data(event_data) {}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

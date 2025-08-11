@@ -115,3 +115,8 @@ private:
 };
 
 }
+
+#define LAMINPIE_CORE_HOME_DATA_DEFAULT_FONTS_NUM_MAX  LAMINPIE_CORE_DISPLAY_DEFAULT_FONTS_NUM_MAX
+#define LAMINPIE_CORE_HOME_DATA_CONTAINER_STYLES_NUM   LAMINPIE_CORE_DISPLAY_DEBUG_STYLES_NUM
+typedef laminpie::system::framework::Laminpie_CoreDisplay Laminpie_CoreHome;
+typedef Laminpie_CoreDisplayData Laminpie_CoreHomeData_t;
