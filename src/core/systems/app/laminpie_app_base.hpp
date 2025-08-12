@@ -30,8 +30,8 @@ typedef struct {
 
 constexpr int Laminpie_App_ID_Min = 1;
 
+class Laminpie_App_Register;
 class Laminpie_App_Manager;
-
 }
 
 namespace laminpie::system::framework {
@@ -42,8 +42,9 @@ namespace laminpie::system::app {
 
 class Laminpie_App_Base {
 public:
+    friend class Laminpie_App_Register;
     friend class Laminpie_App_Manager;
-
+    
     Laminpie_App_Base(const Laminpie_App_Base_Data_t &data);
 
     Laminpie_App_Base(const char *name, const void *launcher_icon, bool use_default_screen);
@@ -85,6 +86,16 @@ public:
     framework::Laminpie_Core_Framework *GetFramework(void) const
     {
         return _framework;
+    }
+
+    bool IsSystemApp(void) const
+    {
+        return _flags.is_system_app;
+    }
+
+    void SetSystemApp(bool is_system_app)
+    {
+        _flags.is_system_app = is_system_app;
     }
     
 

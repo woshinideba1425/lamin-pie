@@ -1,8 +1,8 @@
 #include "laminpie_app_manager.hpp"
 #include "laminpie_core_framework.hpp"
 namespace laminpie::system::app {
-Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework &framework, Laminpie_App_ManagerData_t &data)
-: _event_dispatcher(framework.GetEventDispatcher()), _framework(framework), _app_manager_data(data), _navigation(framework.GetCoreData().navigation)
+Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data)
+: Laminpie_App_Register(framework), _event_dispatcher(framework->GetEventDispatcher()), _app_manager_data(data), _navigation(framework->GetCoreData().navigation)
 {
     SYSTEM_APP_LOG_INFO("App manager initialized");
 }
@@ -42,6 +42,7 @@ void Laminpie_App_Manager::DestroyAllApps()
 }
 void Laminpie_App_Manager::Update()
 {
+
     SYSTEM_APP_LOG_INFO("Updating app manager");
 }
 

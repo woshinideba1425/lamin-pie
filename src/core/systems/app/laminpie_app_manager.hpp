@@ -24,7 +24,7 @@ typedef struct {
 
 class Laminpie_App_Manager : public Laminpie_App_Register {
 public:
-    Laminpie_App_Manager(framework::Laminpie_Core_Framework &framework, Laminpie_App_ManagerData_t &data);
+    Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data);
     
     ~Laminpie_App_Manager();
 
@@ -55,7 +55,6 @@ protected:
     bool ReleaseAppSnapshot(Laminpie_App_Base *app);
     void ResetActiveApp(void);
 
-    framework::Laminpie_Core_Framework &_framework;
     const Laminpie_App_ManagerData_t &_app_manager_data;
 
 private:

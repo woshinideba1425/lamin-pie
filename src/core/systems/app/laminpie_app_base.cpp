@@ -55,7 +55,7 @@ bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *frame
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) install", _core_init_data.name, id);
 
     _core_active_data = _core_init_data;
-    // _framework = framework;
+    _framework = framework;
     _id = id;
 
     try{

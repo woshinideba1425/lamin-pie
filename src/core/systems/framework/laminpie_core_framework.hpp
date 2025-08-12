@@ -21,18 +21,23 @@ typedef struct {
 
 class Laminpie_Core_Framework {
 public:
+    friend class app::Laminpie_App_Register;
+    friend class app::Laminpie_App_Manager;
+
     Laminpie_Core_Framework(Laminpie_Core_Data_t &data);
     ~Laminpie_Core_Framework(void);
 
     static Laminpie_Core_Framework &GetInstance(void);
     const Laminpie_Core_Data_t &GetCoreData(void) const { return _core_data; }
     lv_display_t *GetDisplayDevice(void) const {return _display_device;}
-    event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _event_dispatcher;}
+    event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _core_event;}
 
 protected:
     lv_display_t       *_display_device;
     Laminpie_Core_Data_t _core_data;
-    event::LaminPie_EventDispatcher _event_dispatcher;
+    Laminpie_CoreHome                &_core_display;
+    app::Laminpie_App_Manager        &_core_manager;
+    event::LaminPie_EventDispatcher  &_core_event;
 
 private:
     Laminpie_Core_Framework(const Laminpie_Core_Framework &) = delete;

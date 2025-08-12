@@ -1,101 +1,129 @@
 #include "laminpie_app_register.h"
+#include "laminpie_app_base.hpp"
+#include "laminpie_core_display.hpp"
+#include "laminpie_core_framework.hpp"
+#include "laminpie_log.hpp"
+#include "laminpie_system_internal.h"
 
 namespace laminpie::system::app {
 
+    int Laminpie_App_Register::Install(Laminpie_App_Base* app, void* userData) {
+        bool app_installed = false;
+        bool home_process_app_installed = false;
+        bool ret = true;
+        lv_area_t app_visual_area = {};
+        Laminpie_CoreHome &home = _framework->_core_display;
+        CheckNullAndReturn(app, -1, "Invalid app");
 
-    // 获取应用的 ID
-    int Laminpie_App_Register::GetAppId(Laminpie_App_Base* app) {
-        for (const auto& app_entry : _app_list) {
-            if (app_entry.app == app) {
-                return app_entry.id;
-            }
+        for (auto it = _id_installed_app_map.begin(); it != _id_installed_app_map.end(); it++ ){
+            CheckFalseReturn(it->second != app, -1, "Already installed");
         }
-        return -1;
+        app_installed = app->ProcessInstall(_framework, _app_free_id);
+        ret = _id_installed_app_map.insert(std::pair <int, Laminpie_App_Base *>(app->_id, app)).second;
+        ret = home.GetAppVisualArea(app, app_visual_area);
+        ret = app->SetVisualArea(app_visual_area);
+        ret = app->CalibrateVisualArea();
+
+        ret = home.ProcessAppInstall(app);
+        if (!ret){
+            SYSTEM_APP_LOG_ERROR("Home process app install failed: %s", app->GetName().c_str());
+            return -1;
+        }
+
+        if(ret){
+            _app_free_id++;
+        }
+
+        if (!ret){
+            if (home_process_app_installed && !home.ProcessAppUninstall(app)){
+                SYSTEM_APP_LOG_ERROR("Home process app uninstall failed");
+            }
+            if (app_installed && !app->ProcessUninstall()){
+                SYSTEM_APP_LOG_ERROR("App uninstall failed");
+            }
+            _id_installed_app_map.erase(app->_id);
+            return -1;
+        }
+        return app->_id;
     }
 
-    // 通过应用名称获取应用 ID
-    int Laminpie_App_Register::GetAppId(const char* name) {
-        for (const auto& app_entry : _app_list) {
-            if (app_entry.app->GetName() == name) {
-                return app_entry.id;
-            }
-        }
-        return -1;
-    }
-
-    // 根据 ID 获取应用实例
-    Laminpie_App_Base* Laminpie_App_Register::GetApp(int id) {
-        for (const auto& app_entry : _app_list) {
-            if (app_entry.id == id) {
-                return app_entry.app;
-            }
-        }
-        return nullptr;
-    }
-
-    // 根据名称获取应用实例
-    Laminpie_App_Base* Laminpie_App_Register::GetApp(const char* name) {
-        for (const auto& app_entry : _app_list) {
-            if (app_entry.app->GetName() == name) {
-                return app_entry.app;
-            }
-        }
-        return nullptr;
+    int Laminpie_App_Register::Install(Laminpie_App_Base &app) {
+        return Install(&app);
     }
 
     // 卸载应用
-    bool Laminpie_App_Register::Uninstall(Laminpie_App_Base* app) {
-        if (app == nullptr) {
-            return false;
-        }
+    bool Laminpie_App_Register::Uninstall(Laminpie_App_Base* app) 
+    {
+        bool ret = true;
+        int app_id = -1;
+        Laminpie_CoreHome &home = _framework->_core_display;
 
-        // 遍历应用列表，找到匹配的应用并移除
-        for (auto iter = _app_list.begin(); iter != _app_list.end(); ++iter) {
-            if (iter->app == app) {
-                app->SetRegistered(false);
-                _app_list.erase(iter);
-                return true;
+        CheckNullAndReturn(app,false,"Invalid app");
+        app_id = app->_id;
+
+        SYSTEM_APP_LOG_DEBUG("Uninstall App(%d)", app_id);
+
+        auto it = _id_installed_app_map.begin();
+        for (; it != _id_installed_app_map.end(); it++){
+            if(it->second == app){
+                break;
             }
         }
-        return false;
+        CheckFalseReturn((it->second == app), false, "App(%d) is not installed", app_id);
+
+        CheckFalseReturn(home.ProcessAppUninstall(app), false, "Home process app uninstall failed");
+
+        ret = app->ProcessUninstall();
+        if(!ret){
+            SYSTEM_APP_LOG_ERROR("App uninstall failed");
+        }
+
+        CheckFalseReturn(_id_installed_app_map.erase(app_id) > 0, false, "Remove app failed");
+
+        return ret;
     }
 
-    // 注册系统应用
-    bool Laminpie_App_Register::RegisterSystemApp(Laminpie_App_Base* app)
+    bool Laminpie_App_Register::Uninstall(Laminpie_App_Base &app)
     {
-        if (app == nullptr) {
-            SYSTEM_APP_LOG_ERROR("App is null, cannot register as system app.");
-            return false;
-        }
+        return Uninstall(&app);
+    }
 
-        SYSTEM_APP_LOG_INFO("Registering system app: %s", app->GetName().c_str());
-        
-        // 查找应用并标记为系统应用
-        for (auto& appEntry : _app_list) {
-            if (appEntry.app == app) {
-                appEntry.isSystemApp = true;
-                app->SetSystemApp(true);
-                SYSTEM_APP_LOG_INFO("App %s is registered as system app", app->GetName().c_str());
-                return true;
-            }
+    bool Laminpie_App_Register::Uninstall(int id)
+    {
+        Laminpie_App_Base *app = nullptr;
+        SYSTEM_APP_LOG_DEBUG("Uninstall App(%d)", id);
+
+        app = GetInstalledApp(id);
+        CheckNullAndReturn(app, false, "Get installed app failed");
+
+        CheckFalseReturn(Uninstall(app), false, "Uninstall app failed");
+
+        return true;
+    }
+
+    Laminpie_App_Base *Laminpie_App_Register::GetInstalledApp(int id)
+    {
+        auto it = _id_installed_app_map.find(id);
+        if(it != _id_installed_app_map.end()){
+            return it->second;
         }
-        
-        SYSTEM_APP_LOG_ERROR("App %s not found, cannot register as system app", app->GetName().c_str());
-        return false;
+        return nullptr;
+    }
+    // 注册系统应用
+    bool Laminpie_App_Register::InstallSystemApp(Laminpie_App_Base* app)
+    {
+        app->SetSystemApp(true);
+        return Install(app);
     }
 
     // 判断应用是否为系统应用
     bool Laminpie_App_Register::IsSystemApp(Laminpie_App_Base* app) const {
-        if (app == nullptr) {
-            return false;
-        }
-        
-        for (const auto& app_entry : _app_list) {
-            if (app_entry.app == app) {
-                return app_entry.isSystemApp;
-            }
-        }
-        return false;
+        CheckNullAndReturn(app, false, "Invalid app");
+        return app->IsSystemApp();
+    }
+
+    int Laminpie_App_Register::GetAppFreeId(){
+        return _app_free_id++;
     }
 
 }

@@ -42,8 +42,10 @@ struct Laminpie_CoreDisplayData {
 
 namespace laminpie::system::framework {
 class Laminpie_Framework;
+
 class Laminpie_CoreDisplay {
-    friend class Laminpie_App_Manager;
+    friend class app::Laminpie_App_Manager;
+    friend class app::Laminpie_App_Register;
     friend class Laminpie_Framework;
 
     Laminpie_CoreDisplay(Laminpie_Framework &core, const Laminpie_CoreDisplayData &data);
