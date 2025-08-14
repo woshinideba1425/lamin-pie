@@ -25,14 +25,14 @@ public:
     bool ConsignToBoot(Laminpie_Core_Framework &core_framework);
 
 protected:
-	virtual bool InitializeHardware();
-	virtual bool InitializeBsp();
-	virtual bool InitializeDrivers();
-	virtual bool InitializeMiddleware();
-	virtual bool InitializeSystemServices();
-	virtual bool LoadResources();
-	virtual bool InitializeApplication();
-	virtual bool PostSelfTest();
+	virtual bool InitializeHardware() = 0;
+	virtual bool InitializeBsp() = 0;
+	virtual bool InitializeDrivers() = 0;
+	virtual bool InitializeMiddleware() = 0;
+	virtual bool InitializeSystemServices() = 0;
+	virtual bool LoadResources() = 0;
+	virtual bool InitializeApplication() = 0;
+	virtual bool PostSelfTest(){return true;};
 
 private:
     Laminpie_Boot_Manager(const Laminpie_Boot_Manager &) = delete;

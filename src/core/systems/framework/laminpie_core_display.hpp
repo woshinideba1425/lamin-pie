@@ -41,14 +41,14 @@ struct Laminpie_CoreDisplayData {
 };
 
 namespace laminpie::system::framework {
-class Laminpie_Framework;
+class Laminpie_Core_Framework;
 
 class Laminpie_CoreDisplay {
     friend class app::Laminpie_App_Manager;
     friend class app::Laminpie_App_Register;
-    friend class Laminpie_Framework;
+    friend class Laminpie_Core_Framework;
 
-    Laminpie_CoreDisplay(Laminpie_Framework &core, const Laminpie_CoreDisplayData &data);
+    Laminpie_CoreDisplay(Laminpie_Core_Framework &core, const Laminpie_CoreDisplayData &data);
     ~Laminpie_CoreDisplay();
 
     bool ShowContainerBorder(void);
@@ -77,6 +77,9 @@ class Laminpie_CoreDisplay {
     ) const;
     bool CalibrateCoreFont(const gui::StyleSize *parent, gui::StyleFont &target) const;
     bool CalibrateCoreIconImage(const gui::StyleImage &target) const;
+protected:
+    Laminpie_Core_Framework &_core;
+    const Laminpie_CoreDisplayData &_core_data;
 
 private:
     virtual bool ProcessAppInstall(app::Laminpie_App_Base *app) = 0;
