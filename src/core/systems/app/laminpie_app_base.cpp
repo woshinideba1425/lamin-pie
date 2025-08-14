@@ -11,7 +11,7 @@ namespace laminpie::system::app {
 Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
     _event_dispatcher(LaminPie_EventDispatcher::getInstance()),
     _core_init_data(data),
-    _status(Laminpie_App_Status_t::kApp_Status_Uninstalled),
+    _status(Laminpie_App_Event_Type::kApp_Status_Uninstalled),
     _id(-1),
     _flags{},
     _display_style{},
@@ -39,7 +39,7 @@ bool Laminpie_App_Base::notifyCoreClosed(void) const{
         return true;
     }
 
-    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Status_t::kApp_Status_Closed, nullptr));    
+    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Event_Type::kApp_Status_Closed, nullptr));    
     return true;
 }
 
@@ -65,7 +65,7 @@ bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *frame
     }
 
     if(beginExtra()){
-        _status = Laminpie_App_Status_t::kApp_Status_Created;
+        _status = Laminpie_App_Event_Type::kApp_Status_Created;
     }else{
         ProcessUninstall();
         return false;
@@ -80,7 +80,7 @@ bool Laminpie_App_Base::ProcessUninstall(void){
 
     // _framework = nullptr;
     _core_active_data = {};
-    _status = Laminpie_App_Status_t::kApp_Status_Uninstalled;
+    _status = Laminpie_App_Event_Type::kApp_Status_Uninstalled;
     _id = -1;
     _flags = {};
     _display_style = {};
@@ -100,7 +100,7 @@ bool Laminpie_App_Base::ProcessUninstall(void){
     _resource_anims.clear();
 
     CheckFalseReturn(delExtra(), false, "Begin extra failed");
-    _status = Laminpie_App_Status_t::kApp_Status_Uninstalled;
+    _status = Laminpie_App_Event_Type::kApp_Status_Uninstalled;
 
     return true;
 }
@@ -117,7 +117,7 @@ bool Laminpie_App_Base::ProcessCreate(void){
         SYSTEM_APP_LOG_ERROR("Save recent screen after run failed");
         ret = false;
     }
-    _status = Laminpie_App_Status_t::kApp_Status_Running;
+    _status = Laminpie_App_Event_Type::kApp_Status_Running;
 
     if(!ret){
         CheckFalseReturn(ProcessClose(true), false, "Close app failed");
@@ -135,7 +135,7 @@ bool Laminpie_App_Base::ProcessResume(void)
     CheckFalseReturn(LoadRecentScreen(), false, "Load recent screen failed");
     CheckFalseReturn(LoadAppTheme(), false, "Load app theme failed");
 
-    _status = Laminpie_App_Status_t::kApp_Status_Running;
+    _status = Laminpie_App_Event_Type::kApp_Status_Running;
 
     if(!ret){
         CheckFalseReturn(ProcessClose(true), false, "Close app failed");
@@ -154,7 +154,7 @@ bool Laminpie_App_Base::ProcessPause(void)
     CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen failed");
     CheckFalseReturn(LoadDisplayTheme(), false, "Load display theme failed");
 
-    _status = Laminpie_App_Status_t::kApp_Status_Paused;
+    _status = Laminpie_App_Event_Type::kApp_Status_Paused;
 
     if(!ret){
         CheckFalseReturn(ProcessClose(true), false, "Close app failed");
@@ -171,7 +171,7 @@ bool Laminpie_App_Base::ProcessClose(bool is_app_active)
         return true;
     }
 
-    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Status_t::kApp_Status_Closed, nullptr));
+    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(_id, Laminpie_App_Event_Type::kApp_Status_Closed, nullptr));
     return true;
 }
 

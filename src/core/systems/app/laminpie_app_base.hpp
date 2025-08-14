@@ -103,7 +103,7 @@ protected:
     LaminPie_EventDispatcher &_event_dispatcher;
     bool notifyCoreClosed(void) const;
     void SetLauncherIconImage(const laminpie::gui::StyleImage &icon_image);
-    Laminpie_App_Status_t GetStatus(void) const { return _status; }
+    Laminpie_App_Event_Type GetStatus(void) const { return _status; }
 
     /// @brief 用于注册app环节的代码执行
     virtual bool OnSetup() { return true; }
@@ -210,7 +210,7 @@ private:
     //Core
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;
-    Laminpie_App_Status_t _status;
+    Laminpie_App_Event_Type _status;
     //Navigation
     AppNode _app_node;
     PageNode _home_page_node;

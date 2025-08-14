@@ -25,8 +25,8 @@
 
 namespace laminpie::device {
 
-using DeviceEventType = system::event::DeviceEventType;
-using EventDispatcher = system::event::LaminPie_EventDispatcher<DeviceEventType>;
+using DeviceEventType = system::event::Laminpie_Device_Event_Type;
+using EventDispatcher = system::event::LaminPie_EventDispatcher;
 using Event = system::event::Event<DeviceEventType>;
 class DeviceManager {
 public:

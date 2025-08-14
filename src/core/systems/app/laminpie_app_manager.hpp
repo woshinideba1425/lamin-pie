@@ -9,8 +9,8 @@
 namespace laminpie::system::app {
 struct Laminpie_AppEntry {
     app::Laminpie_App_Base* app;
-    Laminpie_App_Status_t app_state;
-    Laminpie_App_Navigation_Type_t navigation_type;
+    Laminpie_App_Event_Type app_state;
+    Laminpie_App_Navigation_Event_Type navigation_type;
 };    
 
 typedef struct {
@@ -37,6 +37,7 @@ public:
     bool IsAppRunning(Laminpie_App_Base* app) const;
     Laminpie_App_Base* GetForegroundApp() const;
     bool IsForegroundAppRunning() const;
+    Laminpie_App_Navigation& GetNavigation() { return _navigation; }
 
 protected:
     LaminPie_EventDispatcher &_event_dispatcher;
@@ -45,7 +46,7 @@ protected:
     virtual bool ProcessAppResumeExtra(Laminpie_App_Base *app) { return true; }
     virtual bool ProcessAppPauseExtra(Laminpie_App_Base *app)  { return true; }
     virtual bool ProcessAppCloseExtra(Laminpie_App_Base *app)  { return true; }
-    virtual bool ProcessNavigationEvent(Laminpie_App_Navigation_Type_t type) { return true; };
+    virtual bool ProcessNavigationEvent(Laminpie_App_Navigation_Event_Type type) { return true; };
 
     bool ProcessAppRun(Laminpie_App_Base *app);
     bool ProcessAppResume(Laminpie_App_Base *app);

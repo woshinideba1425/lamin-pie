@@ -29,6 +29,17 @@ namespace std {
 namespace laminpie::system::event {
 
 // 事件分发器 - 单例模式，处理所有类型的事件
+/**
+ * @brief Central event dispatcher singleton.
+ * @details Provides synchronous (dispatchEvent) and asynchronous (postEvent) delivery
+ * of strongly-typed events. Listeners are indexed by a composite key of
+ * (event enum type, enum value). Asynchronous delivery is performed by an
+ * internal worker thread that processes a FIFO queue.
+ *
+ * Thread-safety: All public APIs synchronize on an internal mutex. The queue
+ * is protected by a condition variable. Call start() before using postEvent();
+ * call stop() during shutdown to join the worker thread.
+ */
 class LaminPie_EventDispatcher {
 public:
     // 获取单例实例
@@ -38,6 +49,11 @@ public:
     }
 
     // 通用事件监听器结构
+    /**
+     * @brief Listener descriptor with type-erased callback.
+     * @note The callback receives a base IEvent reference and is wrapped to
+     *       safely downcast to the concrete EventType before invocation.
+     */
     struct IEventListener {
         uint32_t id;
         std::function<void(const IEvent&)> callback;
@@ -48,6 +64,14 @@ public:
     };
 
     // 添加事件监听器 - 模板方法，自动推断事件类型
+    /**
+     * @brief Register a listener for a specific event enum value.
+     * @tparam EventType Concrete event type deriving from IEvent.
+     * @tparam CallbackType Callable with signature void(const EventType&).
+     * @param event_type Enum value to listen for.
+     * @param callback User callback to invoke when the matching event is delivered.
+     * @return Assigned listener id which can be used with removeEventListener().
+     */
     template<typename EventType, typename CallbackType>
     uint32_t addEventListener(typename EventType::EnumType event_type, CallbackType callback) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
@@ -68,13 +92,24 @@ public:
         
         // 使用事件类型的枚举类型作为key
         auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumType)), static_cast<int>(event_type));
-        _listeners[key].emplace_back(id, std::move(wrapper), std::type_index(typeid(EventType)));
-        
+
+        if(_listeners.find(key) == _listeners.end()){
+            _listeners[key] = std::make_shared<std::vector<IEventListener>>();
+        }
+
+        _listeners[key]->emplace_back(id, std::move(wrapper), std::type_index(typeid(EventType)));
         return id;
     }
 
     // 特殊的UI事件监听器（保持兼容性）
-    uint32_t addEventListener(Laminpie_AppEventType ui_event_type, Ui_Update_Event_t ui_update_data) {
+    /**
+     * @brief Register an LVGL UI event callback for a given object/event code.
+     * @param ui_event_type Unused dispatcher's enum channel, kept for API symmetry.
+     * @param ui_update_data LVGL callback, event code and user data holder.
+     * @return 0 (listener id not tracked by dispatcher since LVGL owns it).
+     * @note This keeps compatibility with LVGL's event model by delegating to lv_obj_add_event_cb().
+     */
+    uint32_t addEventListener(Laminpie_UI_Event_Type ui_event_type, Ui_Update_Event_t ui_update_data) {
         lv_obj_t *obj = ui_update_data.obj;
         lv_event_code_t event = ui_update_data.event;
         lv_event_cb_t cb = ui_update_data.cb;
@@ -85,12 +120,17 @@ public:
     }
     
     // 移除事件监听器
+    /**
+     * @brief Remove a previously registered listener by id.
+     * @param listenerId The id returned by addEventListener().
+     * @return true if a matching listener existed and was removed; false otherwise.
+     */
     bool removeEventListener(uint32_t listenerId) {
         std::lock_guard<std::mutex> lock(_mutex);
         for (auto& [key, listeners] : _listeners) {
-            for (auto it = listeners.begin(); it != listeners.end(); ++it) {
+            for (auto it = listeners->begin(); it != listeners->end(); ++it) {
                 if (it->id == listenerId) {
-                    listeners.erase(it);
+                    listeners->erase(it);
                     SYSTEM_EVENT_LOG_DEBUG("Removed event listener with ID: %u", listenerId);
                     return true;
                 }
@@ -101,13 +141,20 @@ public:
     }
     
     // 分发事件 - 模板方法，自动推断事件类型
+    /**
+     * @brief Synchronously dispatch an event to all matching listeners.
+     * @tparam EventType Concrete event type deriving from IEvent.
+     * @param event Event instance to deliver immediately on the calling thread.
+     * @note This call blocks until all callbacks complete. Prefer short, non-blocking
+     *       callbacks; use postEvent() for decoupled/long-running work.
+     */
     template<typename EventType>
     void dispatchEvent(const EventType& event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
         SYSTEM_EVENT_LOG_DEBUG("Dispatching event of type: %d", static_cast<int>(event.type));
         
-        std::vector<IEventListener> listeners_to_call;
+        std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
         {
             std::lock_guard<std::mutex> lock(_mutex);
             auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumType)), static_cast<int>(event.type));
@@ -118,7 +165,7 @@ public:
         }
 
         // 调用所有匹配的监听器
-        for (const auto& listener : listeners_to_call) {
+        for (const auto& listener : *listeners_to_call) {
             try {
                 listener.callback(event);
             } catch (const std::exception& e) {
@@ -128,6 +175,13 @@ public:
     }
     
     // 异步分发事件到事件队列
+    /**
+     * @brief Asynchronously enqueue an event for later delivery on the worker thread.
+     * @tparam EventType Concrete event type deriving from IEvent.
+     * @param event Shared pointer to the event instance to enqueue (FIFO).
+     * @post Notifies the condition variable to wake the event loop.
+     * @note Requires start() to be called beforehand; otherwise the queue will not be processed.
+     */
     template<typename EventType>
     void postEvent(std::shared_ptr<EventType> event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
@@ -142,6 +196,10 @@ public:
     }
     
     // 启动事件循环
+    /**
+     * @brief Start the worker thread and event loop.
+     * @note Safe to call multiple times; subsequent calls are ignored once running.
+     */
     void start() {
         SYSTEM_EVENT_LOG_INFO("LaminPie system event module starting...");
         std::lock_guard<std::mutex> lock(_mutex);
@@ -152,6 +210,10 @@ public:
     }
     
     // 停止事件循环
+    /**
+     * @brief Stop the event loop and join the worker thread.
+     * @post Signals the condition variable to exit the wait loop and joins the thread if joinable.
+     */
     void stop() {
         SYSTEM_EVENT_LOG_INFO("LaminPie system event module stopping...");
         {
@@ -166,11 +228,15 @@ public:
     }
     
     // 获取监听器数量（用于调试）
+    /**
+     * @brief Get the total count of registered listeners (for diagnostics).
+     * @return Number of listener entries across all keys.
+     */
     size_t getListenerCount() const {
         std::lock_guard<std::mutex> lock(_mutex);
         size_t count = 0;
         for (const auto& [key, listeners] : _listeners) {
-            count += listeners.size();
+            count += listeners->size();
         }
         return count;
     }
@@ -188,7 +254,8 @@ private:
     LaminPie_EventDispatcher& operator=(LaminPie_EventDispatcher&&) = delete;
 
     // 使用复合key：(枚举类型，枚举值) -> 监听器列表
-    std::unordered_map<std::pair<std::type_index, int>, std::vector<IEventListener>, 
+    std::unordered_map<std::pair<std::type_index, int>, 
+                       std::shared_ptr<std::vector<IEventListener>>, 
                        std::hash<std::pair<std::type_index, int>>> _listeners;
     
     std::queue<std::shared_ptr<IEvent>> _eventQueue;
@@ -201,6 +268,11 @@ private:
     std::thread _eventThread;
 
     // 事件循环处理函数
+    /**
+     * @brief Worker thread main loop waiting on and processing queued events.
+     * @details Waits on the condition variable until running is false and the queue drains,
+     * then dispatches events in FIFO order via processQueuedEvent().
+     */
     void eventLoop() {
         SYSTEM_EVENT_LOG_DEBUG("Event loop started");
         
@@ -233,23 +305,28 @@ private:
     }
 
     // 处理队列中的事件
+    /**
+     * @brief Dispatch a queued event to all listeners whose enum type matches.
+     * @param event Base event reference popped from the queue.
+     * @note Matching is performed by comparing the stored enum type index.
+     */
     void processQueuedEvent(const IEvent& event) {
-        std::vector<IEventListener> listeners_to_call;
+        std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
         
         {
             std::lock_guard<std::mutex> lock(_mutex);
             // 遍历所有监听器，找到匹配的类型
             for (const auto& [key, listeners] : _listeners) {
                 if (key.first == event.getTypeIndex()) {
-                    for (const auto& listener : listeners) {
-                        listeners_to_call.push_back(listener);
+                    for (const auto& listener : *listeners) {
+                        listeners_to_call->push_back(listener);
                     }
                 }
             }
         }
         
         // 调用所有匹配的监听器
-        for (const auto& listener : listeners_to_call) {
+        for (const auto& listener : *listeners_to_call) {
             try {
                 listener.callback(event);
             } catch (const std::exception& e) {
