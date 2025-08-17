@@ -47,6 +47,27 @@ public:
         static LaminPie_EventDispatcher instance;
         return instance;
     }
+    
+    // 初始化函数
+    void Init() {
+        SYSTEM_EVENT_LOG_INFO("LaminPie system event module initialized");
+    }
+    
+    // 清理函数（可选）
+    void Cleanup() {
+        SYSTEM_EVENT_LOG_INFO("LaminPie system event module cleaning up...");
+        
+        // 清理资源
+        std::lock_guard<std::mutex> lock(_mutex);
+        _listeners.clear();
+        
+        // 清空事件队列
+        while (!_eventQueue.empty()) {
+            _eventQueue.pop();
+        }
+        
+        SYSTEM_EVENT_LOG_INFO("LaminPie system event module cleanup completed");
+    }
 
     // 通用事件监听器结构
     /**
@@ -152,7 +173,7 @@ public:
     void dispatchEvent(const EventType& event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        SYSTEM_EVENT_LOG_DEBUG("Dispatching event of type: %d", static_cast<int>(event.type));
+        SYSTEM_EVENT_LOG_DEBUG("Dispatching [%s] event: %s", event.GetEventName().cstr(), event.GetTypeIndexString().cstr());
         
         std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
         {
@@ -192,40 +213,9 @@ public:
             _condition.notify_one();
         }
         
-        SYSTEM_EVENT_LOG_DEBUG("Posted event to queue");
+        SYSTEM_EVENT_LOG_DEBUG("Posted [%s] event to queue: %s", event->GetEventName().cstr(), event->GetTypeIndexString().cstr());
     }
     
-    // 启动事件循环
-    /**
-     * @brief Start the worker thread and event loop.
-     * @note Safe to call multiple times; subsequent calls are ignored once running.
-     */
-    void start() {
-        SYSTEM_EVENT_LOG_INFO("LaminPie system event module starting...");
-        std::lock_guard<std::mutex> lock(_mutex);
-        if (!_running) {
-            _running = true;
-            _eventThread = std::thread(&LaminPie_EventDispatcher::eventLoop, this);
-        }
-    }
-    
-    // 停止事件循环
-    /**
-     * @brief Stop the event loop and join the worker thread.
-     * @post Signals the condition variable to exit the wait loop and joins the thread if joinable.
-     */
-    void stop() {
-        SYSTEM_EVENT_LOG_INFO("LaminPie system event module stopping...");
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _running = false;
-            _condition.notify_one();
-        }
-        
-        if (_eventThread.joinable()) {
-            _eventThread.join();
-        }
-    }
     
     // 获取监听器数量（用于调试）
     /**
@@ -242,10 +232,8 @@ public:
     }
     
 private:
-    LaminPie_EventDispatcher() : _running(false), _nextListenerId(1) {}
-    ~LaminPie_EventDispatcher() { 
-        stop(); 
-    }
+    LaminPie_EventDispatcher() : _nextListenerId(1) {}
+    ~LaminPie_EventDispatcher() {}
 
     // 禁止拷贝和移动
     LaminPie_EventDispatcher(const LaminPie_EventDispatcher&) = delete;
@@ -262,10 +250,8 @@ private:
     
     mutable std::mutex _mutex;
     std::condition_variable _condition;
-    bool _running;
     uint32_t _nextListenerId;
     
-    std::thread _eventThread;
 
     // 事件循环处理函数
     /**
@@ -273,19 +259,20 @@ private:
      * @details Waits on the condition variable until running is false and the queue drains,
      * then dispatches events in FIFO order via processQueuedEvent().
      */
-    void eventLoop() {
+    void eventHandler() {
         SYSTEM_EVENT_LOG_DEBUG("Event loop started");
         
-        while (true) {
+        
+        while (true ) {
             std::shared_ptr<IEvent> event;
             
             {
                 std::unique_lock<std::mutex> lock(_mutex);
                 _condition.wait(lock, [this] { 
-                    return !_running || !_eventQueue.empty(); 
+                    return !_eventQueue.empty(); 
                 });
                 
-                if (!_running && _eventQueue.empty()) {
+                if (_eventQueue.empty()) {
                     break;
                 }
                 
@@ -317,7 +304,7 @@ private:
             std::lock_guard<std::mutex> lock(_mutex);
             // 遍历所有监听器，找到匹配的类型
             for (const auto& [key, listeners] : _listeners) {
-                if (key.first == event.getTypeIndex()) {
+                if (key.first == event.GetTypeIndex()) {
                     for (const auto& listener : *listeners) {
                         listeners_to_call->push_back(listener);
                     }

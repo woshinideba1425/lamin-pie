@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <string_view>
 #include <type_traits>
 #include <string>
 #include <vector>
@@ -20,7 +21,9 @@ concept EnumType = std::is_enum_v<T>;
 class IEvent {
 public:
     virtual ~IEvent() = default;
-    virtual std::type_index getTypeIndex() const = 0;
+    virtual std::type_index GetTypeIndex() const = 0;
+    virtual std::string GetTypeIndexString() const = 0;
+    virtual std::string GetEventName() const = 0;
 };
 
 // 具体事件类型的基类
@@ -28,12 +31,21 @@ template<typename EnumType>
 class Event : public IEvent {
 public:
     EnumType type;
+    std::string name;
     
-    explicit Event(EnumType event_type) : type(event_type) {}
+    explicit Event(EnumType event_type, std::string_view event_name) 
+        : type(event_type), name(event_name) {}
     
-    std::type_index getTypeIndex() const override {
+    std::type_index GetTypeIndex() const override {
         return std::type_index(typeid(EnumType));
     }
+
+    std::string GetEventName() const override {
+        return name;
+    }
+    
+    // 纯虚函数，由继承类实现
+    std::string GetTypeIndexString() const override = 0;
 };
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////// Device event type /////////////////////////////////////////////
@@ -56,12 +68,27 @@ struct DeviceEvent : public Event<Laminpie_Device_Event_Type> {
     std::vector<std::shared_ptr<DeviceIdentifier>> devices;
     
     DeviceEvent(Laminpie_Device_Event_Type t, std::shared_ptr<DeviceIdentifier> dev) 
-        : Event<Laminpie_Device_Event_Type>(t), device(dev) {}
+        : Event<Laminpie_Device_Event_Type>(t, "exDevice"), device(dev) {}
         
     DeviceEvent(Laminpie_Device_Event_Type t, const std::vector<std::shared_ptr<DeviceIdentifier>>& devList)
-        : Event<Laminpie_Device_Event_Type>(t), devices(devList) {
+        : Event<Laminpie_Device_Event_Type>(t, "exDevice"), devices(devList) {
         if (!devList.empty()) {
             device = devList[0];
+        }
+    }
+    
+    // 实现 GetTypeIndexString 接口
+    std::string GetTypeIndexString() const override {
+        switch (type) {
+            case Laminpie_Device_Event_Type::kDeviceAdd: return "DeviceAdd";
+            case Laminpie_Device_Event_Type::kDeviceRemove: return "DeviceRemove";
+            case Laminpie_Device_Event_Type::kDeviceError: return "DeviceError";
+            case Laminpie_Device_Event_Type::kDeviceStatusChanged: return "DeviceStatusChanged";
+            case Laminpie_Device_Event_Type::kDeviceDataReady: return "DeviceDataReady";
+            case Laminpie_Device_Event_Type::kDeviceReady: return "DeviceReady";
+            case Laminpie_Device_Event_Type::kDriverRegistered: return "DriverRegistered";
+            case Laminpie_Device_Event_Type::kBusScanComplete: return "BusScanComplete";
+            default: return "Unknown";
         }
     }
 };
@@ -106,12 +133,12 @@ struct Boot_EventData_t : public Event<Laminpie_Boot_Event_Type> {
 
     // constructors
     explicit Boot_EventData_t(Laminpie_Boot_Event_Type event_type)
-        : Event<Laminpie_Boot_Event_Type>(event_type) {}
+        : Event<Laminpie_Boot_Event_Type>(event_type, "Boot") {}
     
     Boot_EventData_t(Laminpie_Boot_Event_Type event_type, 
                      Laminpie_Boot_Event_Type prev_phase,
                      uint8_t progress = 0)
-        : Event<Laminpie_Boot_Event_Type>(event_type)
+        : Event<Laminpie_Boot_Event_Type>(event_type, "Boot")
         , previous_phase(prev_phase)
         , progress_percent(progress) {}
 
@@ -119,10 +146,26 @@ struct Boot_EventData_t : public Event<Laminpie_Boot_Event_Type> {
                      int err_code,
                      const std::string& err_msg,
                      Laminpie_Boot_Event_Type fail_phase)
-        : Event<Laminpie_Boot_Event_Type>(event_type)
+        : Event<Laminpie_Boot_Event_Type>(event_type, "Boot")
         , error_code(err_code)
         , error_message(err_msg)
         , failing_phase(fail_phase) {}
+    
+    // 实现 GetTypeIndexString 接口
+    std::string GetTypeIndexString() const override {
+        switch (type) {
+            case Laminpie_Boot_Event_Type::kBoot_Stage_HardWareInit: return "HardwareInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_SytemServiceInit: return "SystemServiceInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_BSPInit: return "BSPInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_DriverInit: return "DriverInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_MiddlewareInit: return "MiddlewareInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_Resourceload: return "ResourceLoad";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_AppInit: return "AppInit";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_Complete: return "Complete";
+            case Laminpie_Boot_Event_Type::kBoot_Stage_Failed: return "Failed";
+            default: return "Unknown";
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -144,8 +187,23 @@ struct App_EventData_t : public Event<Laminpie_App_Event_Type> {
     int id;
     Laminpie_App_Event_Type type;
     void *data;
+    
     App_EventData_t(int app_id, Laminpie_App_Event_Type event_type, void *event_data)
-        : Event<Laminpie_App_Event_Type>(event_type), id(app_id), data(event_data) {}
+        : Event<Laminpie_App_Event_Type>(event_type,"App"), id(app_id), data(event_data) {}
+    
+    // 实现 GetTypeIndexString 接口
+    std::string GetTypeIndexString() const override {
+        switch (type) {
+            case Laminpie_App_Event_Type::kApp_Status_Uninstalled: return "Uninstalled";
+            case Laminpie_App_Event_Type::kApp_Status_Created: return "Created";
+            case Laminpie_App_Event_Type::kApp_Status_Running: return "Running";
+            case Laminpie_App_Event_Type::kApp_Status_Paused: return "Paused";
+            case Laminpie_App_Event_Type::kApp_Status_Closed: return "Closed";
+            case Laminpie_App_Event_Type::kApp_Status_RunningBg: return "RunningBackground";
+            case Laminpie_App_Event_Type::kApp_Status_Destroyed: return "Destroyed";
+            default: return "Unknown";
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,10 +256,34 @@ struct Laminpie_Navigation_EventData_t : public Event<Laminpie_App_Navigation_Ev
                                    const std::string& tgt_page = "",
                                    bool success = true,
                                    void* data = nullptr)
-        : Event<Laminpie_App_Navigation_Event_Type>(nav_type),
+        : Event<Laminpie_App_Navigation_Event_Type>(nav_type, "Navigation"),
           source_app_id(src_app), target_app_id(tgt_app),
           source_page_id(src_page), target_page_id(tgt_page),
           navigation_success(success), navigation_data(data) {}
+    
+    // 实现 GetTypeIndexString 接口
+    std::string GetTypeIndexString() const override {
+        switch (type) {
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_APP: return "NavigateToApp";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_BACK_TO_PARENT_APP: return "BackToParentApp";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_NEXT_APP: return "NavigateToNextApp";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_PREVIOUS_APP: return "NavigateToPreviousApp";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_ROOT_APP: return "NavigateToRootApp";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_PAGE: return "NavigateToPage";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_APP_PAGE: return "NavigateToAppPage";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_BACK_PAGE: return "NavigateBackPage";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_NEXT_PAGE: return "NavigateToNextPage";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_PREVIOUS_PAGE: return "NavigateToPreviousPage";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_HOME: return "NavigateToHome";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_RECENTS: return "NavigateToRecents";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_SYSTEM_BACK: return "SystemBack";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_IDLE: return "Idle";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_IN_PROGRESS: return "InProgress";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_COMPLETED: return "Completed";
+            case Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_FAILED: return "Failed";
+            default: return "Unknown";
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,6 +301,14 @@ struct Ui_Update_Event_t : public Event<Laminpie_UI_Event_Type> {
     lv_event_code_t event;
     lv_event_cb_t cb;
     void *user_data;
+    
+    // 实现 GetTypeIndexString 接口
+    std::string GetTypeIndexString() const override {
+        switch (type) {
+            case Laminpie_UI_Event_Type::kUI_Event_Update: return "UIUpdate";
+            default: return "Unknown";
+        }
+    }
 };
 
 }
