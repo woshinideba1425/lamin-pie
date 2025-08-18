@@ -52,6 +52,9 @@ protected:
     bool ProcessAppResume(Laminpie_App_Base *app);
     bool ProcessAppPause(Laminpie_App_Base *app);
     bool ProcessAppClose(Laminpie_App_Base *app);
+    bool ProcessStateTransition(Laminpie_AppEntry& entry, Laminpie_App_Event_Type new_state);
+    bool IsForegroundApp(Laminpie_App_Base* app) const;
+    bool ShouldDestroyApp(Laminpie_App_Base* app) const;
     bool SaveAppSnapshot(Laminpie_App_Base *app);
     bool ReleaseAppSnapshot(Laminpie_App_Base *app);
     void ResetActiveApp(void);

@@ -176,10 +176,10 @@ enum class Laminpie_App_Event_Type {
     kApp_Status_Uninstalled = 0,
     kApp_Status_Created,    
     kApp_Status_Running,
+    kApp_Status_Resumed,
     kApp_Status_Paused,
     kApp_Status_Closed,
     kApp_Status_RunningBg,
-    kApp_Status_Destroyed,
     kApp_Event_Type_Max,
 };
 

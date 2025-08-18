@@ -18,6 +18,7 @@ namespace laminpie::system::app {
         for (auto it = _id_installed_app_map.begin(); it != _id_installed_app_map.end(); it++ ){
             CheckFalseReturn(it->second != app, -1, "Already installed");
         }
+        CheckFalseReturn(app->OnSetup(), false, "App setup failed");
         app_installed = app->ProcessInstall(_framework, _app_free_id);
         ret = _id_installed_app_map.insert(std::pair <int, Laminpie_App_Base *>(app->_id, app)).second;
         ret = home.GetAppVisualArea(app, app_visual_area);

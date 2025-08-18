@@ -36,11 +36,12 @@ public:
     lv_display_t *GetDisplayDevice(void) const {return _display_device;}
     event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _core_event;}
     device::DeviceManager &GetDeviceManager(void) {return _core_device_manager;}
+    app::Laminpie_App_Manager &GetAppManager(void){return _core_app_manager;}
 
 protected:
     Laminpie_Core_Data_t _core_data;
     Laminpie_CoreHome                &_core_display;
-    app::Laminpie_App_Manager        &_core_manager;
+    app::Laminpie_App_Manager        &_core_app_manager;
     event::LaminPie_EventDispatcher  &_core_event;
     device::DeviceManager            &_core_device_manager;
 

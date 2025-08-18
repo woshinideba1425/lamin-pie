@@ -114,7 +114,7 @@ protected:
     /// @brief 用于恢复app环节的代码执行
     virtual bool OnResume() = 0;
     /// @brief 用于暂停app环节的代码执行
-    virtual bool OnOnPause() = 0;
+    virtual bool OnPause() = 0;
     /// @brief 用于关闭app环节的代码执行
     virtual bool OnClose() = 0;
     /// @brief 用于运行后台app环节的代码执行
