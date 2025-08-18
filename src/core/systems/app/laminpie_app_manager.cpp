@@ -2,6 +2,7 @@
 #include "laminpie_core_framework.hpp"
 #include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
+
 namespace laminpie::system::app {
 Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data)
 : Laminpie_App_Register(framework), _event_dispatcher(framework->GetEventDispatcher()), _app_manager_data(data), _navigation(framework->GetAppManager().GetNavigation())
@@ -18,6 +19,13 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
 {
     SYSTEM_APP_LOG_INFO("Starting app: %s", app->GetName().c_str());
     return true;
+}
+
+void Laminpie_App_Manager::SetForegroundApp(Laminpie_App_Base* app)
+{
+    _foreground_app = app;
+
+    _update_first_element = true;
 }
 
 bool Laminpie_App_Manager::MoveAppToBackground(Laminpie_App_Base* app)
@@ -41,6 +49,34 @@ bool Laminpie_App_Manager::DestroyApp(Laminpie_App_Base* app)
 void Laminpie_App_Manager::DestroyAllApps()
 {
     SYSTEM_APP_LOG_INFO("Destroying all apps");
+}
+
+void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
+{
+    for(auto &entry : _running_apps){
+        if(!entry.app->IsRunningBG()){
+            // 前台应用立即执行
+            if(entry.app->OnLoop()){
+                
+                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Running;
+            }else{
+                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
+            }
+        }else{
+            if(_running_bg_cycle % 4 == 0){
+                if(!entry.app->OnRunningBG()){
+                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
+                    SYSTEM_APP_LOG_DEBUG("Background app executed: %s", entry.app->GetName().c_str());
+                }else{
+                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
+                    SYSTEM_APP_LOG_DEBUG("Background app executed: %s", entry.app->GetName().c_str());
+                }
+            }
+        }
+    }
+
+    // 递增后台周期计数器
+    _running_bg_cycle++;
 }
 
 void Laminpie_App_Manager::Update()
@@ -85,11 +121,7 @@ void Laminpie_App_Manager::Update()
                 }
             }
         } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_RunningBg) {
-            // 检查是否应该继续后台运行 (should runningBg?)
-            if (!entry.app->OnRunningBG()) {
-                SYSTEM_APP_LOG_WARN("App background processing failed, transitioning to pause: %s", entry.app->GetName().c_str());
-                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
-            }
+            ProcessAppRunningBG(entry);
         } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) {
             // 检查暂停的应用是否应该销毁 (should destroy?)
             if (ShouldDestroyApp(entry.app)) {
@@ -104,7 +136,20 @@ void Laminpie_App_Manager::Update()
             continue;
         }
         
+        // 下个应用
         ++iter;
+    }
+
+    // 更新前台应用到第一个位置
+    if(_update_first_element){
+        _update_first_element = false;
+
+        for(auto iter = _running_apps.begin(); iter != _running_apps.end(); ++iter){
+            if(iter->app == _foreground_app){
+                std::swap( *(_running_apps.begin()), *(iter));
+                break;
+            }
+        }
     }
     
     // 清理前台应用引用

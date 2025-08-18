@@ -54,6 +54,7 @@ protected:
     bool ProcessAppClose(Laminpie_App_Base *app);
     bool ProcessStateTransition(Laminpie_AppEntry& entry, Laminpie_App_Event_Type new_state);
     bool IsForegroundApp(Laminpie_App_Base* app) const;
+    void SetForegroundApp(Laminpie_App_Base* app);
     bool ShouldDestroyApp(Laminpie_App_Base* app) const;
     bool SaveAppSnapshot(Laminpie_App_Base *app);
     bool ReleaseAppSnapshot(Laminpie_App_Base *app);
@@ -65,5 +66,10 @@ private:
     std::vector<Laminpie_AppEntry> _running_apps;   // 运行中的应用列表
     Laminpie_App_Base* _foreground_app;      // 当前前台应用
     Laminpie_App_Navigation _navigation;
+
+    int _running_bg_cycle = 0;
+    bool _update_first_element = false;
+
+    void ProcessAppRunningBG(Laminpie_AppEntry& entry);
 };
 }

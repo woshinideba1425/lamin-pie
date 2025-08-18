@@ -181,6 +181,16 @@ protected:
         return true;
     }
 
+    bool IsRunningBG(void) const
+    {
+        return _flags.is_running_bg;
+    }
+
+    void SetRunningBG(bool is_running_bg)
+    {
+        _flags.is_running_bg = is_running_bg;
+    }
+
 private:
     virtual bool beginExtra(void) { return true; }
     virtual bool delExtra(void)   { return true; }
@@ -222,6 +232,7 @@ private:
         uint8_t is_screen_small: 1;
         uint8_t is_resource_recording: 1;
         uint8_t is_system_app: 1;
+        uint8_t is_running_bg: 1;
     } _flags;
     struct {
         int w;
