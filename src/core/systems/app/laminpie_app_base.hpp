@@ -221,9 +221,6 @@ private:
     Laminpie_App_Base_Data_t _core_init_data;
     Laminpie_App_Base_Data_t _core_active_data;
     Laminpie_App_Event_Type _status;
-    //Navigation
-    AppNode _app_node;
-    PageNode _home_page_node;
     // Attributes
     int _id;
     struct {

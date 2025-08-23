@@ -14,7 +14,6 @@ typedef struct {
     gui::StyleSize screen_size;
     union {
         Laminpie_CoreHomeData_t home;
-        app::Laminpie_Core_HomeNode *home_node;
         Laminpie_CoreHomeData_t display;
     };
     app::Laminpie_App_ManagerData_t manager;

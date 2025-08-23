@@ -37,7 +37,7 @@ public:
     bool IsAppRunning(Laminpie_App_Base* app) const;
     Laminpie_App_Base* GetForegroundApp() const;
     bool IsForegroundAppRunning() const;
-    Laminpie_App_Navigation& GetNavigation() { return _navigation; }
+    Laminpie_App_Navigation* GetNavigation() { return _navigation; }
 
 protected:
     LaminPie_EventDispatcher &_event_dispatcher;
@@ -65,7 +65,7 @@ protected:
 private:
     std::vector<Laminpie_AppEntry> _running_apps;   // 运行中的应用列表
     Laminpie_App_Base* _foreground_app;      // 当前前台应用
-    Laminpie_App_Navigation _navigation;
+    Laminpie_App_Navigation* _navigation;
 
     int _running_bg_cycle = 0;
     bool _update_first_element = false;

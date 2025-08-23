@@ -5,7 +5,10 @@
 
 namespace laminpie::system::app {
 Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data)
-: Laminpie_App_Register(framework), _event_dispatcher(framework->GetEventDispatcher()), _app_manager_data(data), _navigation(framework->GetAppManager().GetNavigation())
+: Laminpie_App_Register(framework), 
+  _event_dispatcher(framework->GetEventDispatcher()), 
+  _app_manager_data(data), 
+  _navigation(framework->GetAppManager().GetNavigation())
 {
     SYSTEM_APP_LOG_INFO("App manager initialized");
 }
@@ -18,6 +21,40 @@ Laminpie_App_Manager::~Laminpie_App_Manager()
 bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
 {
     SYSTEM_APP_LOG_INFO("Starting app: %s", app->GetName().c_str());
+    if(!app){
+        SYSTEM_APP_LOG_ERROR("StartApp: app is null");
+        return false;
+    }
+
+    if(IsAppRunning(app)){
+        SYSTEM_APP_LOG_ERROR("StartApp: app is already running: %s", app->GetName().c_str());
+        return false;
+    }
+
+    if(_running_apps.size() >= _app_manager_data.app.max_running_num){
+        SYSTEM_APP_LOG_ERROR("StartApp: max running num reached: %s", app->GetName().c_str());
+        return false;
+    }
+
+    SYSTEM_APP_LOG_INFO("Starting app: %s", app->GetName().c_str());
+
+    Laminpie_AppEntry entry;
+    entry.app = app;
+    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Created;
+    entry.navigation_type = Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_IDLE;
+
+    _running_apps.push_back(entry);
+
+    SetForegroundApp(app);
+
+    _navigation->NavigateToApp(app->GetId());
+    
+    _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(
+        app->GetId(),
+        Laminpie_App_Event_Type::kApp_Status_Created,
+        app
+    ));
+
     return true;
 }
 

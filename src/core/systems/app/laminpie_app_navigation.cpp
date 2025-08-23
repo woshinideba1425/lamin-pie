@@ -1,352 +1,518 @@
 #include "laminpie_app_navigation.hpp"
 #include "src/core/systems/laminpie_system_internal.h"
+#include <algorithm>
+#include <chrono>
+#include <unordered_set>
 
 namespace laminpie::system::app {
 
-Laminpie_App_Navigation::Laminpie_App_Navigation(Laminpie_Core_HomeNode root)
-: _root_home(root), _current_app(root), _current_page(nullptr), _app_node_list()
-    {
-    if(_root_home) {
-            _app_node_list.push_back(root);
-        SYSTEM_APP_LOG_INFO("Navigation system initialized with root app: %s", std::string(_root_home->appId).c_str());
+Laminpie_App_Navigation::Laminpie_App_Navigation()
+    : _current_app_id(-1), _previous_app_id(-1), 
+      _next_app_id(-1), _parent_app_id(-1), _first_child_app_id(-1),
+      _is_navigating(false), _last_navigation_time(0), _event_dispatcher(nullptr) {
+    SYSTEM_APP_LOG_INFO("App navigation system initialized - home state ready");
+}
+
+bool Laminpie_App_Navigation::NavigateToApp(int appId) {
+    if (_is_navigating) {
+        SYSTEM_APP_LOG_WARN("Navigation already in progress, cannot navigate to: %s", appId.c_str());
+        return false;
+    }
+    
+    if (!ValidateAppId(appId)) {
+        SYSTEM_APP_LOG_ERROR("Invalid app ID: %s", appId.c_str());
+        return false;
+    }
+    
+    if (!IsAppRegistered(appId)) {
+        SYSTEM_APP_LOG_ERROR("App not registered: %s", appId.c_str());
+        return false;
+    }
+    
+    if (IsCurrentApp(appId)) {
+        SYSTEM_APP_LOG_DEBUG("Already at requested app: %s", appId.c_str());
+        return true;
+    }
+    
+    // 验证导航路径
+    if (!ValidateNavigationPath(appId)) {
+        SYSTEM_APP_LOG_ERROR("Invalid navigation path to app: %s", appId.c_str());
+        return false;
+    }
+    
+    // 开始导航
+    _is_navigating = true;
+    int fromAppId = _current_app_id;
+    
+    // 发送导航开始事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_STARTED, 
+                       fromAppId, appId, true);
+    
+    // 更新导航状态
+    _previous_app_id = _current_app_id;
+    _current_app_id = appId;
+    
+    // 更新App关系信息
+    const auto& appInfo = _registered_apps.at(appId);
+    _parent_app_id = appInfo.parentId;
+    _first_child_app_id = appInfo.firstChildId;
+    
+    // 查找下一个和上一个App
+    _next_app_id = appInfo.nextId;
+    _previous_app_id = appInfo.previousId;
+    
+    // 更新导航历史
+    UpdateNavigationHistory(appId);
+    
+    // 完成导航
+    _is_navigating = false;
+    _last_navigation_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    
+    SYSTEM_APP_LOG_INFO("Successfully navigated from %s to %s", 
+                       fromAppId.empty() ? "none" : fromAppId.c_str(), 
+                       appId.c_str());
+    
+    // 发送导航完成事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_COMPLETED, 
+                       fromAppId, appId, true);
+    
+    // 通知导航事件
+    NotifyNavigationEvent(fromAppId, appId);
+    
+    return true;
+}
+
+bool Laminpie_App_Navigation::NavigateToHome() {
+    if (_is_navigating) {
+        SYSTEM_APP_LOG_WARN("Navigation already in progress, cannot navigate to home");
+        return false;
+    }
+    
+    if (IsAtHome()) {
+        SYSTEM_APP_LOG_DEBUG("Already at home");
+        return true;
+    }
+    
+    // 开始导航到home
+    _is_navigating = true;
+    int fromAppId = _current_app_id;
+    
+    // 发送导航开始事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_STARTED, 
+                       fromAppId, -1, true);  // target_app = -1 表示home
+    
+    // 更新导航状态
+    _previous_app_id = _current_app_id;
+    _current_app_id = -1;  // -1 表示home状态
+    _parent_app_id = -1;
+    _first_child_app_id = -1;
+    _next_app_id = -1;
+    
+    // 完成导航
+    _is_navigating = false;
+    _last_navigation_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    
+    SYSTEM_APP_LOG_INFO("Successfully navigated from app %d to home", fromAppId);
+    
+    // 发送导航完成事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_COMPLETED, 
+                       fromAppId, -1, true);
+    
+    // 通知导航事件
+    NotifyNavigationEvent(fromAppId, -1);
+    
+    return true;
+}
+
+bool Laminpie_App_Navigation::NavigateToPreviousApp() {
+    if (_previous_app_id == -1) {
+        SYSTEM_APP_LOG_WARN("No previous app available");
+        return false;
+    }
+    
+    return NavigateToApp(_previous_app_id);
+}
+
+bool Laminpie_App_Navigation::NavigateToNextApp() {
+    if (_next_app_id == -1) {
+        SYSTEM_APP_LOG_WARN("No next app available");
+        return false;
+    }
+    
+    return NavigateToApp(_next_app_id);
+}
+
+bool Laminpie_App_Navigation::NavigateToParentApp() {
+    if (_parent_app_id == -1) {
+        SYSTEM_APP_LOG_WARN("No parent app available");
+        return false;
+    }
+    
+    return NavigateToApp(_parent_app_id);
+}
+
+bool Laminpie_App_Navigation::NavigateToChildApp() {
+    if (_first_child_app_id == -1) {
+        SYSTEM_APP_LOG_WARN("No child app available");
+        return false;
+    }
+    
+    return NavigateToApp(_first_child_app_id);
+}
+
+std::vector<int> Laminpie_App_Navigation::GetRecentApps() const {
+    std::vector<int> recentApps;
+    recentApps.reserve(_navigation_history.size());
+    
+    for (const auto& history : _navigation_history) {
+        recentApps.push_back(history.appId);
+    }
+    
+    return recentApps;
+}
+
+int Laminpie_App_Navigation::GetPreviousAppId() const {
+    return _previous_app_id;
+}
+
+int Laminpie_App_Navigation::GetNextAppId() const {
+    return _next_app_id;
+}
+
+int Laminpie_App_Navigation::GetParentAppId() const {
+    return _parent_app_id;
+}
+
+int Laminpie_App_Navigation::GetFirstChildAppId() const {
+    return _first_child_app_id;
+}
+
+bool Laminpie_App_Navigation::RegisterApp(int appId, const std::string& appName) {
+    if (IsAppRegistered(appId)) {
+        SYSTEM_APP_LOG_WARN("App already registered: %d", appId);
+        return false;
+    }
+    
+    AppInfo appInfo(appId, appName);
+    _registered_apps[appId] = appInfo;
+    
+    // 移除自动设置home的逻辑，因为home不再是app
+    // 不再需要设置 _home_app_id
+    
+    // 发送App注册事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_APP_REGISTERED, 
+                       -1, appId, true);  // source_app = -1 表示从home注册
+    
+    SYSTEM_APP_LOG_INFO("Successfully registered app: %d (%s)", appId, appName.c_str());
+    return true;
+}
+
+bool Laminpie_App_Navigation::UnregisterApp(int appId) {
+    if (!IsAppRegistered(appId)) {
+        SYSTEM_APP_LOG_WARN("App not registered: %d", appId);
+        return false;
+    }
+    
+    // 检查是否为当前App
+    if (IsCurrentApp(appId)) {
+        SYSTEM_APP_LOG_WARN("Cannot unregister current app: %d", appId);
+        return false;
+    }
+    
+    // 移除home检查，因为home不再是app
+    // 不再需要检查 IsHomeApp(appId)
+    
+    // 从历史记录中移除
+    RemoveFromHistory(appId);
+    
+    // 从注册表中移除
+    _registered_apps.erase(appId);
+    
+    // 发送App注销事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_APP_UNREGISTERED, 
+                       appId, -1, true);  // target_app = -1 表示回到home
+    
+    SYSTEM_APP_LOG_INFO("Successfully unregistered app: %d", appId);
+    return true;
+}
+
+bool Laminpie_App_Navigation::SetAppRelationship(int parentId, int childId) {
+    if (!IsAppRegistered(parentId)) {
+        SYSTEM_APP_LOG_ERROR("Parent app not registered: %d", parentId);
+        return false;
+    }
+    
+    if (!IsAppRegistered(childId)) {
+        SYSTEM_APP_LOG_ERROR("Child app not registered: %d", childId);
+        return false;
+    }
+    
+    if (parentId == childId) {
+        SYSTEM_APP_LOG_ERROR("Cannot set self as parent");
+        return false;
+    }
+    
+    // 设置父子关系
+    _registered_apps[parentId].firstChildId = childId;
+    _registered_apps[childId].parentId = parentId;
+    
+    // 发送关系变更事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_RELATIONSHIP_CHANGED, 
+                       parentId, childId, true);
+    
+    SYSTEM_APP_LOG_INFO("Set parent-child relationship: %s -> %s", parentId.c_str(), childId.c_str());
+    return true;
+}
+
+bool Laminpie_App_Navigation::SetAppLinearRelationship(int previousId, 
+                                                       int currentId, 
+                                                       int nextId) {
+    if (!IsAppRegistered(currentId)) {
+        SYSTEM_APP_LOG_ERROR("Current app not registered: %d", currentId);
+        return false;
+    }
+    
+    if (previousId >= 0 && !IsAppRegistered(previousId)) {
+        SYSTEM_APP_LOG_ERROR("Previous app not registered: %d", previousId);
+        return false;
+    }
+    
+    if (nextId >= 0 && !IsAppRegistered(nextId)) {
+        SYSTEM_APP_LOG_ERROR("Next app not registered: %d", nextId);
+        return false;
+    }
+    
+    // 设置线性关系
+    if (previousId >= 0) {
+        _registered_apps[previousId].nextId = currentId;
+        _registered_apps[currentId].previousId = previousId;
+    }
+    
+    if (nextId >= 0) {
+        _registered_apps[currentId].nextId = nextId;
+        _registered_apps[nextId].previousId = currentId;
+    }
+    
+    // 发送关系变更事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_RELATIONSHIP_CHANGED, 
+                       currentId, -1, true);
+    
+    SYSTEM_APP_LOG_INFO("Set linear relationship: %s <-> %s <-> %s", 
+                       previousId >= 0 ? std::to_string(previousId).c_str() : "none",
+                       std::to_string(currentId).c_str(),
+                       nextId >= 0 ? std::to_string(nextId).c_str() : "none");
+    return true;
+}
+
+void Laminpie_App_Navigation::ClearNavigationHistory() {
+    _navigation_history.clear();
+    SYSTEM_APP_LOG_INFO("Navigation history cleared");
+}
+
+std::vector<NavigationHistory> Laminpie_App_Navigation::GetNavigationHistory() const {
+    return std::vector<NavigationHistory>(_navigation_history.begin(), _navigation_history.end());
+}
+
+bool Laminpie_App_Navigation::IsAppInHistory(int appId) const {
+    return std::any_of(_navigation_history.begin(), _navigation_history.end(),
+                      [&appId](const NavigationHistory& history) {
+                          return history.appId == appId;
+                      });
+}
+
+bool Laminpie_App_Navigation::IsAppRegistered(int appId) const {
+    return _registered_apps.find(appId) != _registered_apps.end();
+}
+
+bool Laminpie_App_Navigation::IsCurrentApp(int appId) const {
+    return _current_app_id == appId;
+}
+
+// 更新：获取当前状态描述
+std::string Laminpie_App_Navigation::GetCurrentStateDescription() const {
+    if (IsAtHome()) {
+        return "HOME";
     } else {
-        SYSTEM_APP_LOG_WARN("Navigation system initialized without a root app");
+        const AppInfo* info = GetAppInfo(_current_app_id);
+        return info ? info->appName : "UNKNOWN";
     }
 }
 
-bool Laminpie_App_Navigation::NavigateToApp(const std::string& appId)
-    {
-    SYSTEM_APP_LOG_INFO("Attempting to navigate to app: %s", appId.c_str());
-    
-    AppNode target = FindApp(appId);
-    if (!target) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to app: %s - not found", appId.c_str());
-        return false;
-    }
-    
-    if (_current_app == target) {
-        SYSTEM_APP_LOG_INFO("Already at requested app: %s", appId.c_str());
-        return true;
-    }
-    
-    // Save previous app before switching
-    AppNode previous = _current_app;
-    _current_app = target;
-    
-    // Reset current page when changing apps
-    _current_page = nullptr;
-    
-    // If app has pages, set the first one as current
-    if (!target->appPages.empty() && !target->appPages.begin()->second.empty()) {
-        _current_page = target->appPages.begin()->second[0];
-        SYSTEM_APP_LOG_INFO("Set initial page to: %s", _current_page->pageId.c_str());
-    }
-    
-    SYSTEM_APP_LOG_INFO("Successfully navigated from app: %s to app: %s", 
-                       previous ? std::string(previous->appId).c_str() : "null", 
-                       std::string(_current_app->appId).c_str());
-    return true;
+const AppInfo* Laminpie_App_Navigation::GetAppInfo(int appId) const {
+    auto it = _registered_apps.find(appId);
+    return (it != _registered_apps.end()) ? &(it->second) : nullptr;
 }
 
-bool Laminpie_App_Navigation::NavigateBackToParentApp()
-    {
-    if (!_current_app || _current_app == _root_home) {
-        SYSTEM_APP_LOG_WARN("Cannot navigate back: already at root or invalid state");
-        return false;
-    }
+// 更新：获取导航状态字符串
+std::string Laminpie_App_Navigation::GetNavigationStateString() const {
+    std::stringstream ss;
+    ss << "Navigation State:\n";
+    ss << "  Current: " << (IsAtHome() ? "HOME" : std::to_string(_current_app_id)) << "\n";
+    ss << "  Previous: " << (_previous_app_id >= 0 ? std::to_string(_previous_app_id) : "NONE") << "\n";
+    ss << "  Next: " << (_next_app_id >= 0 ? std::to_string(_next_app_id) : "NONE") << "\n";
+    ss << "  Parent: " << (_parent_app_id >= 0 ? std::to_string(_parent_app_id) : "NONE") << "\n";
+    ss << "  First Child: " << (_first_child_app_id >= 0 ? std::to_string(_first_child_app_id) : "NONE") << "\n";
+    ss << "  Registered Apps: " << _registered_apps.size() << "\n";
+    ss << "  History Size: " << _navigation_history.size() << "\n";
+    return ss.str();
+}
+
+void Laminpie_App_Navigation::DumpNavigationState() const {
+    SYSTEM_APP_LOG_INFO("=== Navigation State Dump ===");
+    SYSTEM_APP_LOG_INFO("Current App: %s", _current_app_id.c_str());
+    SYSTEM_APP_LOG_INFO("Home App: %s", _home_app_id.c_str()); // 保留_home_app_id，虽然它不再是app
+    SYSTEM_APP_LOG_INFO("Previous App: %s", _previous_app_id.c_str());
+    SYSTEM_APP_LOG_INFO("Next App: %s", _next_app_id.c_str());
+    SYSTEM_APP_LOG_INFO("Parent App: %s", _parent_app_id.c_str());
+    SYSTEM_APP_LOG_INFO("First Child App: %s", _first_child_app_id.c_str());
+    SYSTEM_APP_LOG_INFO("Registered Apps: %zu", _registered_apps.size());
+    SYSTEM_APP_LOG_INFO("History Size: %zu", _navigation_history.size());
+    SYSTEM_APP_LOG_INFO("Is Navigating: %s", _is_navigating ? "true" : "false");
+    SYSTEM_APP_LOG_INFO("Event Dispatcher: %s", _event_dispatcher ? "set" : "not set");
+    SYSTEM_APP_LOG_INFO("================================");
+}
+
+bool Laminpie_App_Navigation::UpdateNavigationHistory(int appId) {
+    // 从历史记录中移除已存在的相同App
+    RemoveFromHistory(appId);
     
-    if (!_current_app->parent) {
-        SYSTEM_APP_LOG_WARN("Current app has no parent to navigate back to");
-        return false;
-    }
+    // 添加到历史记录开头
+    AddToHistory(appId);
     
-    AppNode parent = _current_app->parent;
-    SYSTEM_APP_LOG_INFO("Navigating back from %s to parent app %s", 
-                       std::string(_current_app->appId).c_str(), 
-                       std::string(parent->appId).c_str());
-    
-    _current_app = parent;
-    
-    // Reset current page when changing apps
-    _current_page = nullptr;
-    
-    // If parent app has pages, set the first one as current
-    if (!parent->appPages.empty() && !parent->appPages.begin()->second.empty()) {
-        _current_page = parent->appPages.begin()->second[0];
-        SYSTEM_APP_LOG_INFO("Set parent app page to: %s", _current_page->pageId.c_str());
-    }
+    // 限制历史记录大小
+    TrimHistorySize();
     
     return true;
 }
 
-bool Laminpie_App_Navigation::NavigateToNextApp()
-{
-    if (!_current_app) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to next app: current app is null");
-        return false;
+void Laminpie_App_Navigation::NotifyNavigationEvent(int fromAppId, int toAppId) {
+    if (_navigation_callback) {
+        try {
+            _navigation_callback(fromAppId, toAppId);
+        } catch (const std::exception& e) {
+            SYSTEM_APP_LOG_ERROR("Navigation callback exception: %s", e.what());
+        }
     }
-    
-    if (!_current_app->next) {
-        SYSTEM_APP_LOG_WARN("Current app has no next app to navigate to");
-        return false;
-    }
-    
-    AppNode next = _current_app->next;
-    SYSTEM_APP_LOG_INFO("Navigating from %s to next app %s", 
-                       std::string(_current_app->appId).c_str(), 
-                       std::string(next->appId).c_str());
-    
-    _current_app = next;
-    
-    // Reset current page when changing apps
-    _current_page = nullptr;
-    
-    // If next app has pages, set the first one as current
-    if (!next->appPages.empty() && !next->appPages.begin()->second.empty()) {
-        _current_page = next->appPages.begin()->second[0];
-        SYSTEM_APP_LOG_INFO("Set next app page to: %s", _current_page->pageId.c_str());
-    }
-    
-    return true;
 }
 
-bool Laminpie_App_Navigation::NavigateToPreviousApp()
-{
-    if (!_current_app) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to previous app: current app is null");
-        return false;
+bool Laminpie_App_Navigation::ValidateNavigationPath(int targetAppId) const {
+    // 检查是否存在循环引用
+    int currentId = targetAppId;
+    std::unordered_set<int> visited;
+    
+    while (currentId >= 0 && visited.find(currentId) == visited.end()) {
+        visited.insert(currentId);
+        auto it = _registered_apps.find(currentId);
+        if (it == _registered_apps.end()) {
+            break;
+        }
+        currentId = it->second.parentId;
     }
     
-    if (!_current_app->Previous) {
-        SYSTEM_APP_LOG_WARN("Current app has no previous app to navigate to");
-        return false;
-    }
-    
-    AppNode previous = _current_app->Previous;
-    SYSTEM_APP_LOG_INFO("Navigating from %s to previous app %s", 
-                       std::string(_current_app->appId).c_str(), 
-                       std::string(previous->appId).c_str());
-    
-    _current_app = previous;
-    
-    // Reset current page when changing apps
-    _current_page = nullptr;
-    
-    // If previous app has pages, set the first one as current
-    if (!previous->appPages.empty() && !previous->appPages.begin()->second.empty()) {
-        _current_page = previous->appPages.begin()->second[0];
-        SYSTEM_APP_LOG_INFO("Set previous app page to: %s", _current_page->pageId.c_str());
-    }
-    
-    return true;
+    return visited.find(targetAppId) == visited.end();
 }
 
-bool Laminpie_App_Navigation::NavigateToPage(const std::string& pageId)
-{
-    if (!_current_app) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to page: no current app");
-        return false;
+void Laminpie_App_Navigation::AddToHistory(int appId) {
+    auto it = std::find_if(_navigation_history.begin(), _navigation_history.end(),
+                           [&appId](const NavigationHistory& history) {
+                               return history.appId == appId;
+                           });
+    
+    if (it != _navigation_history.end()) {
+        // 更新现有记录的时间戳
+        it->timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+    } else {
+        // 添加新记录
+        NavigationHistory history(appId, "");
+        auto appIt = _registered_apps.find(appId);
+        if (appIt != _registered_apps.end()) {
+            history.appName = appIt->second.appName;
+        }
+        history.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        
+        _navigation_history.push_front(history);
     }
-    
-    SYSTEM_APP_LOG_INFO("Attempting to navigate to page: %s in current app", pageId.c_str());
-    
-    PageNode targetPage = FindPage(pageId);
-    if (!targetPage) {
-        SYSTEM_APP_LOG_ERROR("Page %s not found in current app", pageId.c_str());
-        return false;
-    }
-    
-    if (_current_page == targetPage) {
-        SYSTEM_APP_LOG_INFO("Already at requested page: %s", pageId.c_str());
-        return true;
-    }
-    
-    PageNode previousPage = _current_page;
-    _current_page = targetPage;
-    
-    SYSTEM_APP_LOG_INFO("Successfully navigated from page: %s to page: %s", 
-                       previousPage ? previousPage->pageId.c_str() : "null", 
-                       _current_page->pageId.c_str());
-    return true;
 }
 
-bool Laminpie_App_Navigation::NavigateToAppPage(const std::string& appId, const std::string& pageId)
-{
-    SYSTEM_APP_LOG_INFO("Attempting to navigate to app: %s, page: %s", appId.c_str(), pageId.c_str());
-    
-    // First navigate to the app
-    if (!NavigateToApp(appId)) {
-        return false;
-    }
-    
-    // Then navigate to the specific page
-    return NavigateToPage(pageId);
+void Laminpie_App_Navigation::RemoveFromHistory(int appId) {
+    _navigation_history.erase(
+        std::remove_if(_navigation_history.begin(), _navigation_history.end(),
+                      [&appId](const NavigationHistory& history) {
+                          return history.appId == appId;
+                      }),
+        _navigation_history.end()
+    );
 }
 
-bool Laminpie_App_Navigation::NavigateBackPage()
-{
-    if (!_current_page) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate back: no current page");
-        return false;
+void Laminpie_App_Navigation::TrimHistorySize() {
+    while (_navigation_history.size() > kMaxHistorySize) {
+        _navigation_history.pop_back();
     }
-    
-    if (!_current_page->parent) {
-        SYSTEM_APP_LOG_WARN("Current page has no parent to navigate back to");
-        return false;
-    }
-    
-    PageNode parentPage = _current_page->parent;
-    SYSTEM_APP_LOG_INFO("Navigating back from page %s to parent page %s", 
-                       _current_page->pageId.c_str(), 
-                       parentPage->pageId.c_str());
-    
-    _current_page = parentPage;
-    return true;
 }
 
-bool Laminpie_App_Navigation::NavigateToNextPage()
-{
-    if (!_current_page) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to next page: no current page");
-        return false;
-    }
-    
-    if (!_current_page->next) {
-        SYSTEM_APP_LOG_WARN("Current page has no next page to navigate to");
-        return false;
-    }
-    
-    PageNode nextPage = _current_page->next;
-    SYSTEM_APP_LOG_INFO("Navigating from page %s to next page %s", 
-                       _current_page->pageId.c_str(), 
-                       nextPage->pageId.c_str());
-    
-    _current_page = nextPage;
-    return true;
-}
-
-bool Laminpie_App_Navigation::NavigateToPreviousPage()
-{
-    if (!_current_page) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to previous page: no current page");
-        return false;
-    }
-    
-    if (!_current_page->previous) {
-        SYSTEM_APP_LOG_WARN("Current page has no previous page to navigate to");
-        return false;
-    }
-    
-    PageNode previousPage = _current_page->previous;
-    SYSTEM_APP_LOG_INFO("Navigating from page %s to previous page %s", 
-                       _current_page->pageId.c_str(), 
-                       previousPage->pageId.c_str());
-    
-    _current_page = previousPage;
-    return true;
-}
-
-void Laminpie_App_Navigation::RegisterAppNode(AppNode app)
-{
-    if (!app) {
-        SYSTEM_APP_LOG_ERROR("Cannot register null app");
+void Laminpie_App_Navigation::SendNavigationEvent(Laminpie_App_Navigation_Event_Type event_type,
+                                                 int source_app,
+                                                 int target_app,
+                                                 bool success,
+                                                 const std::string& error_msg) {
+    if (!_event_dispatcher) {
+        SYSTEM_APP_LOG_DEBUG("Event dispatcher not set, skipping navigation event");
         return;
     }
     
-    // Check if app already exists
-    for (const auto& existingApp : _app_node_list) {
-        if (existingApp->appId == app->appId) {
-            SYSTEM_APP_LOG_WARN("App with ID %s already registered, updating", std::string(app->appId).c_str());
-            
-            // Update the existing app with new data (but keep relationships)
-            existingApp->appName = app->appName;
-            existingApp->appPages = app->appPages;
-            return;
+    try {
+        // 创建导航事件数据
+        auto nav_event = std::make_shared<Laminpie_Navigation_EventData_t>(
+            event_type, source_app, target_app, "", "", success, nullptr);
+        
+        if (!success && !error_msg.empty()) {
+            nav_event->error_message = error_msg;
         }
-    }
-    
-    // Add new app to list
-    _app_node_list.push_back(app);
-    SYSTEM_APP_LOG_INFO("Registered new app: %s", std::string(app->appId).c_str());
-    
-    // If this is the first app, make it root and current
-    if (_app_node_list.size() == 1) {
-        _root_home = app;
-        _current_app = app;
-        SYSTEM_APP_LOG_INFO("Set as root and current app");
+        
+        // 发送事件
+        _event_dispatcher->postEvent(nav_event);
+        
+        SYSTEM_APP_LOG_DEBUG("Navigation event sent: %s [%s -> %s] success=%s", 
+                           nav_event->GetTypeIndexString().c_str(),
+                           source_app.c_str(), target_app.c_str(),
+                           success ? "true" : "false");
+    } catch (const std::exception& e) {
+        SYSTEM_APP_LOG_ERROR("Failed to send navigation event: %s", e.what());
     }
 }
 
-void Laminpie_App_Navigation::UnregisterAppNode(AppNode app)
-{
-    _app_node_list.erase(std::remove(_app_node_list.begin(), _app_node_list.end(), app), _app_node_list.end());
-    SYSTEM_APP_LOG_INFO("Unregistered app: %s", std::string(app->appId).c_str());
+// 新增：Home状态管理
+bool Laminpie_App_Navigation::CanNavigateToHome() const {
+    // 检查是否可以导航到home
+    // 1. 不在导航中
+    // 2. 当前不在home状态
+    // 3. 没有阻塞的导航操作
+    return !_is_navigating && !IsAtHome();
 }
 
-void Laminpie_App_Navigation::SetAppRelationship(const std::string& parentId, const std::string& childId)
-{
-    AppNode parentApp = FindApp(parentId);
-    AppNode childApp = FindApp(childId);
+bool Laminpie_App_Navigation::ForceReturnToHome() {
+    SYSTEM_APP_LOG_WARN("Force returning to home state");
     
-    if (!parentApp) {
-        SYSTEM_APP_LOG_ERROR("Cannot set relationship: parent app %s not found", parentId.c_str());
-        return;
-    }
+    // 强制重置所有导航状态
+    int fromAppId = _current_app_id;
     
-    if (!childApp) {
-        SYSTEM_APP_LOG_ERROR("Cannot set relationship: child app %s not found", childId.c_str());
-        return;
-    }
+    _current_app_id = -1;
+    _previous_app_id = -1;
+    _next_app_id = -1;
+    _parent_app_id = -1;
+    _first_child_app_id = -1;
+    _is_navigating = false;
     
-    // Set parent-child relationship
-    parentApp->firstChild = childApp;
-    childApp->parent = parentApp;
+    // 发送强制返回home事件
+    SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_HOME, 
+                       fromAppId, -1, true);
     
-    SYSTEM_APP_LOG_INFO("Set parent-child relationship between %s and %s", 
-                       std::string(parentApp->appId).c_str(), 
-                       std::string(childApp->appId).c_str());
+    SYSTEM_APP_LOG_INFO("Force returned to home from app: %d", fromAppId);
+    return true;
 }
 
-AppNode Laminpie_App_Navigation::FindApp(const std::string& appId) const
-{
-    for (const auto& app : _app_node_list) {
-        if (app->appId == appId) {
-            return app;
-        }
-    }
-    
-        SYSTEM_APP_LOG_ERROR("App navigation error: appId %s not found", appId.c_str());
-    return nullptr;
-}
-
-PageNode Laminpie_App_Navigation::FindPage(const std::string& pageId) const
-{
-    if (!_current_app) {
-        SYSTEM_APP_LOG_ERROR("Cannot find page: no current app");
-        return nullptr;
-    }
-
-    // Search in all page collections of the current app
-    for (const auto& pageCollection : _current_app->appPages) {
-        for (const auto& page : pageCollection.second) {
-            if (page->pageId == pageId) {
-                return page;
-            }
-        }
-    }
-    
-    SYSTEM_APP_LOG_ERROR("Page navigation error: pageId %s not found in current app", pageId.c_str());
-    return nullptr;
-}
-
-Laminpie_Core_HomeNode Laminpie_App_Navigation::NavigateToHome(){
-    if (!_root_home) {
-        SYSTEM_APP_LOG_ERROR("Cannot navigate to home: no root home");
-        return nullptr;
-    }
-
-    _current_app = _root_home;
-    _current_page = nullptr;
-    return _root_home;
-}
 } // namespace laminpie::system::app
