@@ -19,11 +19,6 @@ bool Laminpie_App_Navigation::NavigateToApp(int appId) {
         return false;
     }
     
-    if (!ValidateAppId(appId)) {
-        SYSTEM_APP_LOG_ERROR("Invalid app ID: %s", appId.c_str());
-        return false;
-    }
-    
     if (!IsAppRegistered(appId)) {
         SYSTEM_APP_LOG_ERROR("App not registered: %s", appId.c_str());
         return false;

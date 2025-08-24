@@ -6,6 +6,10 @@
 #include "laminpie_system_internal.h"
 
 namespace laminpie::system::app {
+    Laminpie_App_Register::Laminpie_App_Register(framework::Laminpie_Core_Framework *framework) 
+    : _framework(framework), _navigation(&_framework->GetAppNavigation()) {
+        SYSTEM_APP_LOG_DEBUG("App register initialized");
+    }
 
     int Laminpie_App_Register::Install(Laminpie_App_Base* app, void* userData) {
         bool app_installed = false;
@@ -45,6 +49,7 @@ namespace laminpie::system::app {
             _id_installed_app_map.erase(app->_id);
             return -1;
         }
+        _navigation->RegisterApp(app->_id, app->GetName());
         return app->_id;
     }
 

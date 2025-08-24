@@ -8,6 +8,8 @@
 #include <functional>
 #include "../laminpie_system_internal.h"
 #include "laminpie_event_dispatcher.hpp"
+#define HOME_ID -1
+#define INVALID_ID -2
 
 namespace laminpie::system::app {
 
@@ -64,7 +66,7 @@ public:
     
     // 系统级导航状态
     int GetCurrentAppId() const { return _current_app_id; }
-    bool IsAtHome() const { return _current_app_id == -1; }  // 新增：检查是否在home状态
+    virtual bool IsAtHome() const { return _current_app_id == HOME_ID; }  // 新增：检查是否在home状态
     std::vector<int> GetRecentApps() const;
     int GetPreviousAppId() const;
     int GetNextAppId() const;
@@ -124,17 +126,17 @@ private:
     
     // 发送导航事件
     void SendNavigationEvent(Laminpie_App_Navigation_Event_Type event_type,
-                           int source_app = -1,
-                           int target_app = -1,
+                           int source_app = INVALID_ID,
+                           int target_app = INVALID_ID,
                            bool success = true,
                            const std::string& error_msg = "");
     
     // 成员变量 - 移除_home_app_id
-    int _current_app_id = -1;                        // 当前App ID，-1表示在home状态
-    int _previous_app_id = -1;                       // 上一个App ID，-1表示无效
-    int _next_app_id = -1;                           // 下一个App ID，-1表示无效
-    int _parent_app_id = -1;                         // 父App ID，-1表示无效
-    int _first_child_app_id = -1;                    // 第一个子App ID，-1表示无效
+    int _current_app_id = HOME_ID;                        // 当前App ID，-1表示在home状态
+    int _previous_app_id = INVALID_ID;                       // 上一个App ID，-1表示无效
+    int _next_app_id = INVALID_ID;                           // 下一个App ID，-1表示无效
+    int _parent_app_id = INVALID_ID;                         // 父App ID，-1表示无效
+    int _first_child_app_id = INVALID_ID;                    // 第一个子App ID，-1表示无效
     
     std::deque<NavigationHistory> _navigation_history;  // 导航历史记录
     std::unordered_map<int, AppInfo> _registered_apps;  // 已注册的App

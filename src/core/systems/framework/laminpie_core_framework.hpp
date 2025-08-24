@@ -36,13 +36,15 @@ public:
     event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _core_event;}
     device::DeviceManager &GetDeviceManager(void) {return _core_device_manager;}
     app::Laminpie_App_Manager &GetAppManager(void){return _core_app_manager;}
-
+    app::Laminpie_App_Navigation &GetAppNavigation(void){return _core_app_navigation;}
+    
 protected:
     Laminpie_Core_Data_t _core_data;
     Laminpie_CoreHome                &_core_display;
     app::Laminpie_App_Manager        &_core_app_manager;
     event::LaminPie_EventDispatcher  &_core_event;
     device::DeviceManager            &_core_device_manager;
+    app::Laminpie_App_Navigation    &_core_app_navigation;
 
     lv_display_t       *_display_device;
     mutable lv_indev_t *_touch_device;

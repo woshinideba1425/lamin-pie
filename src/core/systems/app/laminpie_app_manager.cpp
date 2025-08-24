@@ -7,10 +7,9 @@ namespace laminpie::system::app {
 Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data)
 : Laminpie_App_Register(framework), 
   _event_dispatcher(framework->GetEventDispatcher()), 
-  _app_manager_data(data), 
-  _navigation(framework->GetAppManager().GetNavigation())
+  _app_manager_data(data)
 {
-    SYSTEM_APP_LOG_INFO("App manager initialized");
+    SYSTEM_APP_LOG_DEBUG("App manager initialized");
 }
 
 Laminpie_App_Manager::~Laminpie_App_Manager()
@@ -41,13 +40,10 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
     Laminpie_AppEntry entry;
     entry.app = app;
     entry.app_state = Laminpie_App_Event_Type::kApp_Status_Created;
-    entry.navigation_type = Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_IDLE;
 
     _running_apps.push_back(entry);
 
     SetForegroundApp(app);
-
-    _navigation->NavigateToApp(app->GetId());
     
     _event_dispatcher.postEvent(std::make_shared<App_EventData_t>(
         app->GetId(),
@@ -303,7 +299,7 @@ bool Laminpie_App_Manager::IsForegroundAppRunning() const
     return _foreground_app != nullptr;
 }
 
-bool Laminpie_App_Manager::ProcessAppRun(Laminpie_App_Base *app)
+bool Laminpie_App_Manager::ProcessAppCreate(Laminpie_App_Base *app)
 {
     SYSTEM_APP_LOG_INFO("Processing app run: %s", app->GetName().c_str());
     CheckFalseReturn(app->ResetRecordResource(), false, "Reset record resource failed");
