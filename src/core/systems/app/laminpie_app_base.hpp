@@ -23,6 +23,7 @@ typedef struct {
         uint8_t enable_default_screen: 1;
         uint8_t enable_recycle_resource: 1;
         uint8_t enable_resize_visual_area: 1;
+        uint8_t enable_running_bg: 1;
     } flags;
     int app_proity;
     void *user_data;

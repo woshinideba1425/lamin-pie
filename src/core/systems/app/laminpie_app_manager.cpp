@@ -61,27 +61,78 @@ void Laminpie_App_Manager::SetForegroundApp(Laminpie_App_Base* app)
     _update_first_element = true;
 }
 
+void Laminpie_App_Manager::NotFoundAppAlert(bool is_found)
+{
+    if(!is_found){
+        SYSTEM_APP_LOG_ERROR("Running apps: %d", _running_apps.size());
+        for(auto &entry : _running_apps){
+            SYSTEM_APP_LOG_ERROR("Running app: %s", entry.app->GetName().c_str());
+            SYSTEM_APP_LOG_ERROR("Running app state: %d", static_cast<int>(entry.app_state));
+        }
+    }
+}
 bool Laminpie_App_Manager::MoveAppToBackground(Laminpie_App_Base* app)
 {
     SYSTEM_APP_LOG_INFO("Moving app to background: %s", app->GetName().c_str());
+    bool is_found = false;
+    for(auto &entry : _running_apps){
+        if(entry.app == app){
+            if(entry.app->GetCoreActiveData().flags.enable_running_bg){
+                ProcessStateTransition(entry, Laminpie_App_Event_Type::kApp_Status_RunningBg);
+            }else{
+                SYSTEM_APP_LOG_ERROR("MoveAppToBackground: app is not allow to run bg: %s", app->GetName().c_str());
+                return false;
+            }
+            is_found = true;
+            break;
+        }
+    }
+
+    NotFoundAppAlert(is_found);
+
     return true;
 }
 
 bool Laminpie_App_Manager::PauseApp(Laminpie_App_Base* app)
 {
     SYSTEM_APP_LOG_INFO("Pausing app: %s", app->GetName().c_str());
+    bool is_found = false;
+    for(auto &entry : _running_apps){
+        if(entry.app == app){
+            ProcessStateTransition(entry, Laminpie_App_Event_Type::kApp_Status_Paused);
+            is_found = true;
+            break;
+        }
+    }
+
+    NotFoundAppAlert(is_found);
+
     return true;
 }
 
 bool Laminpie_App_Manager::DestroyApp(Laminpie_App_Base* app)
 {
     SYSTEM_APP_LOG_INFO("Destroying app: %s", app->GetName().c_str());
+    bool is_found = false;
+    for(auto &entry : _running_apps){
+        if(entry.app == app){
+            ProcessStateTransition(entry, Laminpie_App_Event_Type::kApp_Status_Closed);
+            is_found = true;
+            break;
+        }
+    }
+
+    NotFoundAppAlert(is_found);
+
     return true;
 }
 
 void Laminpie_App_Manager::DestroyAllApps()
 {
     SYSTEM_APP_LOG_INFO("Destroying all apps");
+    for(auto &entry : _running_apps){
+        ProcessStateTransition(entry, Laminpie_App_Event_Type::kApp_Status_Closed);
+    }
 }
 
 void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
@@ -204,32 +255,22 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
     switch (new_state) {
         case Laminpie_App_Event_Type::kApp_Status_Created:
             // onCreate: 应用创建阶段
-            CheckFalseReturn(entry.app->StartRecordResource(), false, "Start record resource failed");
-            CheckFalseReturn(entry.app->OnCreate(), false, "App create failed");
-            CheckFalseReturn(entry.app->SaveDisplayTheme(), false, "Save display theme failed");
-            CheckFalseReturn(entry.app->EndRecordResource(), false, "End record resource failed");
+            ProcessAppCreate(entry.app);
             break;
             
         case Laminpie_App_Event_Type::kApp_Status_Resumed:
             // onResume: 应用恢复阶段
-            CheckFalseReturn(entry.app->StartRecordResource(), false, "Start record resource failed");
-            CheckFalseReturn(entry.app->OnResume(), false, "App resume failed");
-            CheckFalseReturn(entry.app->SaveDisplayTheme(), false, "Save display theme failed");
-            CheckFalseReturn(entry.app->EndRecordResource(), false, "End record resource failed");
-            
-            // 根据是否为前台应用决定下一步状态
-            if (IsForegroundApp(entry.app)) {
+            if(ProcessAppResume(entry.app)){
                 entry.app_state = Laminpie_App_Event_Type::kApp_Status_Running;
-                _foreground_app = entry.app;
-            } else {
-                entry.app_state = Laminpie_App_Event_Type::kApp_Status_RunningBg;
             }
-            return true; // 直接返回，因为我们已经设置了新状态
+            break;
             
         case Laminpie_App_Event_Type::kApp_Status_Running:
             // onRunning: 前台运行状态
             if (_foreground_app != entry.app) {
                 _foreground_app = entry.app;
+
+                _update_first_element = true;
                 SYSTEM_APP_LOG_INFO("App became foreground: %s", entry.app->GetName().c_str());
             }
             break;
@@ -271,13 +312,18 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
 bool Laminpie_App_Manager::IsAppRunning(Laminpie_App_Base* app) const
 {
     SYSTEM_APP_LOG_INFO("Checking if app is running: %s", app->GetName().c_str());
-    return true;
+    for(auto &entry : _running_apps){
+        if(entry.app == app){
+            return true;
+        }
+    }
+    return false;
 }
 
 Laminpie_App_Base* Laminpie_App_Manager::GetForegroundApp() const
 {
     SYSTEM_APP_LOG_INFO("Getting foreground app");
-    return nullptr;
+    return _foreground_app;
 }
 
 bool Laminpie_App_Manager::IsForegroundApp(Laminpie_App_Base* app) const
@@ -287,10 +333,7 @@ bool Laminpie_App_Manager::IsForegroundApp(Laminpie_App_Base* app) const
 
 bool Laminpie_App_Manager::ShouldDestroyApp(Laminpie_App_Base* app) const
 {
-    // 检查应用是否请求退出或系统要求销毁
-    // 这里可以根据具体需求实现更复杂的逻辑
-    return app->GetStatus() == Laminpie_App_Event_Type::kApp_Status_Closed ||
-           app->GetStatus() == Laminpie_App_Event_Type::kApp_Status_Uninstalled;
+    return !app->GetCoreActiveData().flags.enable_running_bg;
 }
 
 bool Laminpie_App_Manager::IsForegroundAppRunning() const

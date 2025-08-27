@@ -67,5 +67,6 @@ private:
     bool _update_first_element = false;
 
     void ProcessAppRunningBG(Laminpie_AppEntry& entry);
+    void NotFoundAppAlert(bool is_found);
 };
 }
