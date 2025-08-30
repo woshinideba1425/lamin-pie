@@ -30,6 +30,9 @@ public:
 template<typename EnumType>
 class Event : public IEvent {
 public:
+    // 类型别名，让继承类可以访问枚举类型
+    using EnumTypeAlias = EnumType;
+    
     EnumType type;
     std::string name;
     

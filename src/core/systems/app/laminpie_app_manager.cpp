@@ -1,5 +1,6 @@
 #include "laminpie_app_manager.hpp"
 #include "laminpie_core_framework.hpp"
+#include "laminpie_log.hpp"
 #include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
 
@@ -10,6 +11,14 @@ Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *f
   _app_manager_data(data)
 {
     SYSTEM_APP_LOG_DEBUG("App manager initialized");
+
+    // 注册关闭事件监听器
+    _close_event_listener_id = _event_dispatcher.addEventListener<App_EventData_t>(
+        Laminpie_App_Event_Type::kApp_Status_Closed,
+        [this](const App_EventData_t& event) {
+            this->ProcessAppCloseEvent(event);
+        }
+    );
 }
 
 Laminpie_App_Manager::~Laminpie_App_Manager()
@@ -30,6 +39,7 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
         return false;
     }
 
+
     if(_running_apps.size() >= _app_manager_data.app.max_running_num){
         SYSTEM_APP_LOG_ERROR("StartApp: max running num reached: %s", app->GetName().c_str());
         return false;
@@ -38,8 +48,20 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
     SYSTEM_APP_LOG_INFO("Starting app: %s", app->GetName().c_str());
 
     Laminpie_AppEntry entry;
-    entry.app = app;
-    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Created;
+    entry.app = app;    
+    // 如果应用允许后台运行，则检查是否已经存在，如果存在则恢复
+    if(app->GetCoreActiveData().flags.enable_running_bg) {
+        for(auto &entry : _running_apps){
+            if(entry.app == app){
+               if(entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) {
+                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Resumed;
+                break;
+               }
+            }
+        }
+    }else{ // 如果不允许后台运行，则已经销毁需要重新创建
+        entry.app_state = Laminpie_App_Event_Type::kApp_Status_Created;
+    }
 
     _running_apps.push_back(entry);
 
@@ -163,6 +185,23 @@ void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
     _running_bg_cycle++;
 }
 
+void Laminpie_App_Manager::ProcessAppCloseEvent(const App_EventData_t& event)
+{
+    SYSTEM_APP_LOG_INFO("Received close event for app ID: %d", event.app_id);
+    
+    // 找到对应的应用并设置状态为关闭
+    for (auto& entry : _running_apps) {
+        if (entry.app->GetId() == event.id) {
+            SYSTEM_APP_LOG_INFO("Setting app to closed state: %s", entry.app->GetName().c_str());
+            entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
+            _running_apps.erase(std::remove_if(_running_apps.begin(), _running_apps.end(), 
+                [&entry](const Laminpie_AppEntry& e) { return e.app == entry.app; }), 
+                _running_apps.end());
+            break;
+        }
+    }
+}
+
 void Laminpie_App_Manager::Update()
 {
     SYSTEM_APP_LOG_DEBUG("Updating app manager with %zu running apps", _running_apps.size());
@@ -183,42 +222,18 @@ void Laminpie_App_Manager::Update()
                 entry.app_state = current_app_status;
                 
                 // 发送应用状态变化事件
-                auto app_event = std::make_shared<App_EventData_t>(
-                    entry.app->GetId(), 
-                    current_app_status, 
-                    entry.app
-                );
-                _event_dispatcher.postEvent(app_event);
-            }
-        }
-        
-        // 处理应用的循环逻辑 - 对应流程图中的决策点
-        if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Running) {
-            // 检查是否应该继续运行 (exit requested?)
-            if (!entry.app->OnLoop()) {
-                SYSTEM_APP_LOG_WARN("App loop failed, transitioning to pause: %s", entry.app->GetName().c_str());
-                // 根据流程图，应该检查 should destroy?
-                if (ShouldDestroyApp(entry.app)) {
-                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
-                } else {
-                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
+                if(current_app_status != Laminpie_App_Event_Type::kApp_Status_Closed){
+                    auto app_event = std::make_shared<App_EventData_t>(
+                        entry.app->GetId(), 
+                        current_app_status, 
+                        entry.app
+                    );
+                    _event_dispatcher.postEvent(app_event);
                 }
             }
-        } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_RunningBg) {
-            ProcessAppRunningBG(entry);
-        } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) {
-            // 检查暂停的应用是否应该销毁 (should destroy?)
-            if (ShouldDestroyApp(entry.app)) {
-                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
-            }
         }
         
-        // 处理需要销毁的应用
-        if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Closed) {
-            SYSTEM_APP_LOG_INFO("Removing destroyed app: %s", entry.app->GetName().c_str());
-            iter = _running_apps.erase(iter);
-            continue;
-        }
+        ProcessStateProgressionLogic(entry);
         
         // 下个应用
         ++iter;
@@ -244,6 +259,32 @@ void Laminpie_App_Manager::Update()
     }
 }
 
+void Laminpie_App_Manager::ProcessStateProgressionLogic(Laminpie_AppEntry& entry)
+{
+    // 处理应用的循环逻辑 - 对应流程图中的决策点
+    if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Created) { // 创建状态
+        entry.app_state = Laminpie_App_Event_Type::kApp_Status_Resumed;
+    } else if(entry.app_state == Laminpie_App_Event_Type::kApp_Status_Resumed){ // 恢复状态
+        entry.app_state = Laminpie_App_Event_Type::kApp_Status_Running;
+    }else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Running) { // 运行状态
+        // 如果应用不是前台应用，则设置为前台应用
+        if (_foreground_app != entry.app) {
+            _foreground_app = entry.app;
+
+            _update_first_element = true;
+            SYSTEM_APP_LOG_INFO("App became foreground: %s", entry.app->GetName().c_str());
+        }
+    } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_RunningBg) { // 后台运行状态
+        if(_foreground_app == entry.app){
+            entry.app_state = Laminpie_App_Event_Type::kApp_Status_Resumed;
+        }
+    } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) { // 暂停状态
+        // 检查暂停的应用是否应该销毁 (should destroy?)
+        if (ShouldDestroyApp(entry.app)) {
+            entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
+        }
+    }
+}
 bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Laminpie_App_Event_Type new_state)
 {
     SYSTEM_APP_LOG_INFO("Processing state transition: %s [%d -> %d]", 
@@ -267,19 +308,21 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
             
         case Laminpie_App_Event_Type::kApp_Status_Running:
             // onRunning: 前台运行状态
-            if (_foreground_app != entry.app) {
-                _foreground_app = entry.app;
 
-                _update_first_element = true;
-                SYSTEM_APP_LOG_INFO("App became foreground: %s", entry.app->GetName().c_str());
+            if (!entry.app->OnLoop()) {
+                SYSTEM_APP_LOG_WARN("App loop failed, transitioning to pause: %s", entry.app->GetName().c_str());
+                // 根据流程图，应该检查 should destroy?
+                if (ShouldDestroyApp(entry.app)) {
+                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
+                } else {
+                    entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
+                }
             }
             break;
             
         case Laminpie_App_Event_Type::kApp_Status_RunningBg:
             // onRunningBg: 后台运行状态
-            if (_foreground_app == entry.app) {
-                ResetActiveApp();
-            }
+            ProcessAppRunningBG(entry);
             break;
             
         case Laminpie_App_Event_Type::kApp_Status_Paused:
@@ -291,7 +334,6 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
         case Laminpie_App_Event_Type::kApp_Status_Closed:
             // onClose: 应用关闭
             CheckFalseReturn(entry.app->OnClose(), false, "App close failed");
-            entry.app->notifyCoreClosed();
             CheckFalseReturn(entry.app->ProcessClose(true), false, "Close app failed");
             break;
             
@@ -378,6 +420,12 @@ bool Laminpie_App_Manager::ProcessAppResume(Laminpie_App_Base *app)
 bool Laminpie_App_Manager::ProcessAppPause(Laminpie_App_Base *app)
 {
     SYSTEM_APP_LOG_INFO("Processing app pause: %s", app->GetName().c_str());
+    CheckFalseReturn(app->ProcessPause(), false, "App process pause failed");
+    if(_app_manager_data.flags.enable_app_save_snapshot) {
+        if(!SaveAppSnapshot(app)) {
+            SYSTEM_MANAGER_LOG_ERROR("Save app snapshot failed");
+        }
+    }
 
     return true;
 }

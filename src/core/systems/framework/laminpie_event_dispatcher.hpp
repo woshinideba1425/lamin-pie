@@ -94,7 +94,7 @@ public:
      * @return Assigned listener id which can be used with removeEventListener().
      */
     template<typename EventType, typename CallbackType>
-    uint32_t addEventListener(typename EventType::EnumType event_type, CallbackType callback) {
+    uint32_t addEventListener(typename EventType::EnumTypeAlias event_type, CallbackType callback) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
         SYSTEM_EVENT_LOG_DEBUG("Adding event listener for type: %d", static_cast<int>(event_type));
@@ -112,7 +112,7 @@ public:
         uint32_t id = _nextListenerId++;
         
         // 使用事件类型的枚举类型作为key
-        auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumType)), static_cast<int>(event_type));
+        auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumTypeAlias)), static_cast<int>(event_type));
 
         if(_listeners.find(key) == _listeners.end()){
             _listeners[key] = std::make_shared<std::vector<IEventListener>>();
@@ -178,7 +178,7 @@ public:
         std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
         {
             std::lock_guard<std::mutex> lock(_mutex);
-            auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumType)), static_cast<int>(event.type));
+            auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumTypeAlias)), static_cast<int>(event.type));
             auto it = _listeners.find(key);
             if (it != _listeners.end()) {
                 listeners_to_call = it->second;

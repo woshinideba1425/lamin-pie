@@ -39,6 +39,7 @@ public:
 
 protected:
     LaminPie_EventDispatcher &_event_dispatcher;
+    int _close_event_listener_id;
 
     virtual bool ProcessAppRunExtra(Laminpie_App_Base *app)    { return true; }
     virtual bool ProcessAppResumeExtra(Laminpie_App_Base *app) { return true; }
@@ -50,6 +51,8 @@ protected:
     bool ProcessAppPause(Laminpie_App_Base *app);
     bool ProcessAppClose(Laminpie_App_Base *app);
     bool ProcessStateTransition(Laminpie_AppEntry& entry, Laminpie_App_Event_Type new_state);
+    void ProcessStateProgressionLogic(Laminpie_AppEntry& entry);
+    void ProcessAppCloseEvent(const App_EventData_t& event);
     bool IsForegroundApp(Laminpie_App_Base* app) const;
     void SetForegroundApp(Laminpie_App_Base* app);
     bool ShouldDestroyApp(Laminpie_App_Base* app) const;
