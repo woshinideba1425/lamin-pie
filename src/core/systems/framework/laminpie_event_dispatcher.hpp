@@ -122,6 +122,42 @@ public:
         return id;
     }
 
+    // 方案1：添加监听整个枚举类型的方法
+    template<typename EventType, typename CallbackType>
+    uint32_t addEventListenerForAll(CallbackType callback) {
+        static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
+        
+        SYSTEM_EVENT_LOG_DEBUG("Adding event listener for all events of type: %s", 
+                              typeid(typename EventType::EnumTypeAlias).name());
+        
+        // 包装回调，监听所有该枚举类型的事件
+        auto wrapper = [cb = std::move(callback)](const IEvent& event) {
+            if (auto* specificEvent = dynamic_cast<const EventType*>(&event)) {
+                cb(*specificEvent);
+            }
+        };
+
+        std::lock_guard<std::mutex> lock(_mutex);
+        uint32_t id = _nextListenerId++;
+        
+        // 使用特殊key表示监听整个枚举类型
+        // 使用-1作为特殊值表示监听所有枚举值
+        auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumTypeAlias)), -1);
+
+        if(_listeners.find(key) == _listeners.end()){
+            _listeners[key] = std::make_shared<std::vector<IEventListener>>();
+        }
+
+        _listeners[key]->emplace_back(id, std::move(wrapper), std::type_index(typeid(EventType)));
+        return id;
+    }
+
+    // 方案2：重载addEventListener，支持监听所有事件
+    template<typename EventType, typename CallbackType>
+    uint32_t addEventListener(CallbackType callback) {
+        return addEventListenerForAll<EventType>(std::move(callback));
+    }
+
     // 特殊的UI事件监听器（保持兼容性）
     /**
      * @brief Register an LVGL UI event callback for a given object/event code.
@@ -173,24 +209,44 @@ public:
     void dispatchEvent(const EventType& event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        SYSTEM_EVENT_LOG_DEBUG("Dispatching [%s] event: %s", event.GetEventName().cstr(), event.GetTypeIndexString().cstr());
+        SYSTEM_EVENT_LOG_DEBUG("Dispatching [%s] event: %s", 
+                              event.GetEventName().c_str(), 
+                              event.GetTypeIndexString().c_str());
         
-        std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
+        std::vector<std::shared_ptr<std::vector<IEventListener>>> listeners_to_call;
+        
         {
             std::lock_guard<std::mutex> lock(_mutex);
-            auto key = std::make_pair(std::type_index(typeid(typename EventType::EnumTypeAlias)), static_cast<int>(event.type));
-            auto it = _listeners.find(key);
-            if (it != _listeners.end()) {
-                listeners_to_call = it->second;
+            
+            // 1. 查找特定枚举值的监听器
+            auto specific_key = std::make_pair(
+                std::type_index(typeid(typename EventType::EnumTypeAlias)), 
+                static_cast<int>(event.type)
+            );
+            auto specific_it = _listeners.find(specific_key);
+            if (specific_it != _listeners.end()) {
+                listeners_to_call.push_back(specific_it->second);
+            }
+            
+            // 2. 查找监听整个枚举类型的监听器
+            auto all_key = std::make_pair(
+                std::type_index(typeid(typename EventType::EnumTypeAlias)), 
+                -1  // -1表示监听所有枚举值
+            );
+            auto all_it = _listeners.find(all_key);
+            if (all_it != _listeners.end()) {
+                listeners_to_call.push_back(all_it->second);
             }
         }
 
         // 调用所有匹配的监听器
-        for (const auto& listener : *listeners_to_call) {
-            try {
-                listener.callback(event);
-            } catch (const std::exception& e) {
-                SYSTEM_EVENT_LOG_ERROR("Exception in event callback: %s", e.what());
+        for (const auto& listener_list : listeners_to_call) {
+            for (const auto& listener : *listener_list) {
+                try {
+                    listener.callback(event);
+                } catch (const std::exception& e) {
+                    SYSTEM_EVENT_LOG_ERROR("Exception in event callback: %s", e.what());
+                }
             }
         }
     }

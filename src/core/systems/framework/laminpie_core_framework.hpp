@@ -6,6 +6,7 @@
 #include "style/laminpie_gui_style.hpp"
 #include "laminpie_core_display.hpp"
 #include "laminpie_device_manager.h"
+#include <sys/_stdint.h>
 
 namespace laminpie::system::framework {
 
@@ -30,6 +31,8 @@ public:
                             device::DeviceManager &core_device_manager, lv_display_t *device);
     ~Laminpie_Core_Framework(void);
 
+    /* Core */
+    // bool checkCoreInitialized(void) const               { return (_event_obj.get() != nullptr); }
     static Laminpie_Core_Framework &GetInstance(void);
     const Laminpie_Core_Data_t &GetCoreData(void) const { return _core_data; }
     lv_display_t *GetDisplayDevice(void) const {return _display_device;}
@@ -38,6 +41,32 @@ public:
     app::Laminpie_App_Manager &GetAppManager(void){return _core_app_manager;}
     app::Laminpie_App_Navigation &GetAppNavigation(void){return _core_app_navigation;}
     
+    /* Device */
+    bool setTouchDevice(lv_indev_t *touch) const;
+    lv_display_t *getDisplayDevice(void) const { return _display_device; }
+    lv_indev_t *getTouchDevice(void) const  { return _touch_device; }
+
+    /* Event */
+    // lv_obj_t *getEventObject(void) const    { return _event_obj.get(); }
+    // lv_event_code_t getFreeEventCode(void)  { return (lv_event_code_t)++_free_event_code; }
+
+    template<typename EventType, typename CallbackType>
+    uint32_t RegisterEventListener(typename EventType::EnumTypeAlias event_type, 
+                                   CallbackType&& callback) {
+        return _core_event.addEventListener<EventType>(event_type, std::forward<CallbackType>(callback));
+    }
+
+    template<typename EventType, typename CallbackType>
+    uint32_t RegisterEventListenerForAll(CallbackType&& callback) {
+        return _core_event.addEventListenerForAll<EventType>(std::forward<CallbackType>(callback));
+    }
+
+    // Data Update
+    bool registerDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const;
+    bool unregisterDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const;
+    bool sendDataUpdateEvent(void *param = nullptr) const;
+    // lv_event_code_t getDataUpdateEventCode(void) const  { return _data_update_event_code; }
+
 protected:
     Laminpie_Core_Data_t _core_data;
     Laminpie_CoreHome                &_core_display;
@@ -52,6 +81,7 @@ private:
     Laminpie_Core_Framework(const Laminpie_Core_Framework &) = delete;
     Laminpie_Core_Framework &operator=(const Laminpie_Core_Framework &) = delete;
 
+    gui::LvObject _event_obj;
     //event
     event::Laminpie_Device_Event_Type _device_event_type;
     event::Laminpie_Boot_Event_Type _boot_event_type;
