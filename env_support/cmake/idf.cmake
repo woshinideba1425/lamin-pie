@@ -105,18 +105,50 @@ if(CONFIG_LAMINPIE_ENABLE_SYSTEMS)
 endif()
 
 #
-# portting
+# thread porting
 #
+set(PORTING_SRC_DIR ${LAMINPIE_SRC_DIRS}/porting)
 
-# if(CONFIG_LAMINPIE_USE_OS_STD_THREAD)
-#     set(PORTING_SRC_DIR ${LAMINPIE_SRC_DIRS}/portting)
-#     file(GLOB_RECURSE PORTING_SRCS_C ${PORTING_SRC_DIR}/*.c)
-#    file(GLOB_RECURSE PORTING_SRCS_CPP ${PORTING_SRC_DIR}/*.cpp)
-#    list(APPEND SRCS_C ${PORTING_SRCS_C})
-#    list(APPEND SRCS_CPP ${PORTING_SRCS_CPP})
-#    list(APPEND LAMINPIE_INC_DIRS ${PORTING_SRC_DIR})
-#endif()
+# 根据LAMINPIE_USE_OS宏选择具体的实现文件
+if(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_NONE")
+    # 无操作系统支持
+    set(PORTING_SRCS_C ${PORTING_SRC_DIR}/laminpie_none.c)
+    set(PORTING_SRCS_CPP "")
+elseif(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_STD_THREAD")
+    # 标准C++线程库
+    set(PORTING_SRCS_C "")
+    set(PORTING_SRCS_CPP ${PORTING_SRC_DIR}/laminpie_std_thread.cpp)
+elseif(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_PTHREAD")
+    # POSIX线程库
+    set(PORTING_SRCS_C "")
+    set(PORTING_SRCS_CPP ${PORTING_SRC_DIR}/laminpie_pthread.cpp)
+elseif(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_FREERTOS")
+    # FreeRTOS实时操作系统
+    set(PORTING_SRCS_C ${PORTING_SRC_DIR}/laminpie_freertos.cpp)
+    set(PORTING_SRCS_CPP "")
+elseif(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_RTTHREAD")
+    # RT-Thread实时操作系统
+    set(PORTING_SRCS_C ${PORTING_SRC_DIR}/laminpie_rtthread.cpp)
+    set(PORTING_SRCS_CPP "")
+elseif(CONFIG_LAMINPIE_USE_OS STREQUAL "LAMINPIE_OS_CUSTOM")
+    # 自定义操作系统实现
+    if(DEFINED LAMINPIE_OS_CUSTOM_SRC)
+        set(PORTING_SRCS_C ${LAMINPIE_OS_CUSTOM_SRC})
+        set(PORTING_SRCS_CPP "")
+    else()
+        message(FATAL_ERROR "LAMINPIE_USE_OS is set to LAMINPIE_OS_CUSTOM but LAMINPIE_OS_CUSTOM_SRC is not defined")
+    endif()
+else()
+    # 默认使用标准库线程
+    message(STATUS "LAMINPIE_USE_OS not specified, using default std::thread implementation")
+    set(PORTING_SRCS_C "")
+    set(PORTING_SRCS_CPP ${PORTING_SRC_DIR}/laminpie_std_thread.cpp)
+endif()
 
+# 添加选中的源文件
+list(APPEND SRCS_C ${PORTING_SRCS_C})
+list(APPEND SRCS_CPP ${PORTING_SRCS_CPP})
+list(APPEND LAMINPIE_INC_DIRS ${PORTING_SRC_DIR})
 
 # Register component
 idf_component_register(SRCS ${SRCS_C} ${SRCS_CPP}

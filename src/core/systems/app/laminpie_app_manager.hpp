@@ -5,6 +5,7 @@
 #include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
 #include "laminpie_app_navigation.hpp"
+#include "laminpie_thread.h"
 
 namespace laminpie::system::app {
 struct Laminpie_AppEntry {

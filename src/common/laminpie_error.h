@@ -4,7 +4,9 @@
 #include <memory>
 #include <functional>
 #include <system_error>
+#if ESP_PLATFORM
 #include "esp_err.h"
+#endif
 
 namespace laminate {
 
@@ -47,6 +49,7 @@ private:
     int code_;
 };
 
+#if ESP_PLATFORM
 // 平台特定错误 - ESP-IDF
 class EspError : public Error {
 public:
@@ -65,6 +68,8 @@ private:
     esp_err_t err_;
     mutable char err_buf_[64];
 };
+
+#endif
 
 // 总线错误
 class BusError : public StandardError {
@@ -86,6 +91,7 @@ private:
     Code bus_code_;
 };
 
+#if CONFIG_LAMINPIE_ENABLE_I2C_BUS && ESP_PLATFORM
 // 为特定总线类型扩展错误
 class I2cBusError : public BusError {
 public:
@@ -119,5 +125,5 @@ public:
 private:
     I2cErrorCode i2c_code_;
 };
-
+#endif
 }  // namespace laminate

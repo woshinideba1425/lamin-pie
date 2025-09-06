@@ -1,12 +1,11 @@
 // result.h - 类似Rust的Result类型
 #pragma once
-#include "error.h"
+#include "laminpie_error.h"
 #include <variant>
 #include <utility>
 #include <optional>
 #include <memory>
 #include <string>
-#include "error.h"
 
 namespace laminate {
 
