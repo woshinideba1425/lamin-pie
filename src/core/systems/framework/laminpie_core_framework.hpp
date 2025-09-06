@@ -27,7 +27,9 @@ public:
     friend class app::Laminpie_App_Manager;
 
     Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Laminpie_CoreHome &core_display, 
-                            app::Laminpie_App_Manager &core_manager, event::LaminPie_EventDispatcher &core_event,
+                            app::Laminpie_App_Manager &core_manager, 
+                            app::Laminpie_App_Navigation &core_navigation, 
+                            event::LaminPie_EventDispatcher &core_event,
                             device::DeviceManager &core_device_manager, lv_display_t *device);
     ~Laminpie_Core_Framework(void);
 
@@ -81,7 +83,7 @@ private:
     Laminpie_Core_Framework(const Laminpie_Core_Framework &) = delete;
     Laminpie_Core_Framework &operator=(const Laminpie_Core_Framework &) = delete;
 
-    gui::LvObject _event_obj;
+    // gui::LvObject _event_obj;
     //event
     event::Laminpie_Device_Event_Type _device_event_type;
     event::Laminpie_Boot_Event_Type _boot_event_type;

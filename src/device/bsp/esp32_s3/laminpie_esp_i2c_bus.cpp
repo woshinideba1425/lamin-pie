@@ -148,8 +148,11 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
         }
     }
     
-    auto event = std::make_shared<Event>(DeviceEventType::kBusScanComplete, "bus_scan_complete");
-    _eventDispatcher.dispatchEvent(event);
+    // 创建一个空的设备标识符作为占位符
+    auto emptyDevice = std::make_shared<DeviceIdentifier>();
+    auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+        DeviceEventType::kBusScanComplete, emptyDevice);
+    _eventDispatcher.dispatchEvent(*event);
     
     return device_list;
 }

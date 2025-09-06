@@ -3,13 +3,16 @@
 namespace laminpie::system::framework {
 
 Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Laminpie_CoreHome &core_display, 
-                            app::Laminpie_App_Manager &core_manager, event::LaminPie_EventDispatcher &core_event,
+                            app::Laminpie_App_Manager &core_manager, 
+                            app::Laminpie_App_Navigation &core_navigation, 
+                            event::LaminPie_EventDispatcher &core_event,
                             device::DeviceManager &core_device_manager, lv_display_t *device):
                             _core_data(data),
                             _core_display(core_display),
                             _core_app_manager(core_manager),
                             _core_event(core_event),
                             _core_device_manager(core_device_manager),
+                            _core_app_navigation(core_navigation),
                             _display_device(device),
                             _touch_device(nullptr),
                             _device_event_type(event::Laminpie_Device_Event_Type::kDevice_Event_Type_Max),

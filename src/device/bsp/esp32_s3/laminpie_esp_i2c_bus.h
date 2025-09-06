@@ -8,8 +8,8 @@
 #include "laminpie_event_dispatcher.hpp"
 
 namespace laminpie::device::bsp::esp32_s3 {
-using DeviceEventType = system::event::DeviceEventType;
-using EventDispatcher = system::event::LaminPie_EventDispatcher<DeviceEventType>;
+using DeviceEventType = system::event::Laminpie_Device_Event_Type;
+using EventDispatcher = system::event::LaminPie_EventDispatcher;
 using Event = system::event::Event<DeviceEventType>;
 
 struct I2cDevDeleter {

@@ -460,9 +460,13 @@ void Laminpie_App_Navigation::SendNavigationEvent(Laminpie_App_Navigation_Event_
     }
     
     try {
+        // 将int转换为string
+        std::string source_app_str = std::to_string(source_app);
+        std::string target_app_str = std::to_string(target_app);
+        
         // 创建导航事件数据
         auto nav_event = std::make_shared<Laminpie_Navigation_EventData_t>(
-            event_type, source_app, target_app, "", "", success, nullptr);
+            event_type, source_app_str, target_app_str, "", "", success, nullptr);
         
         if (!success && !error_msg.empty()) {
             nav_event->error_message = error_msg;
@@ -471,9 +475,9 @@ void Laminpie_App_Navigation::SendNavigationEvent(Laminpie_App_Navigation_Event_
         // 发送事件
         _event_dispatcher->postEvent(nav_event);
         
-        SYSTEM_APP_LOG_DEBUG("Navigation event sent: %s [%s -> %s] success=%s", 
+        SYSTEM_APP_LOG_DEBUG("Navigation event sent: %s [%d -> %d] success=%s", 
                            nav_event->GetTypeIndexString().c_str(),
-                           source_app.c_str(), target_app.c_str(),
+                           source_app, target_app,
                            success ? "true" : "false");
     } catch (const std::exception& e) {
         SYSTEM_APP_LOG_ERROR("Failed to send navigation event: %s", e.what());

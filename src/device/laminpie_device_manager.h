@@ -65,10 +65,10 @@ private:
     ~DeviceManager();
     
     // 处理事件的回调函数
-    void handleDeviceAdded(const DeviceEventType& event);
-    void handleDeviceRemoved(const DeviceEventType& event);
-    void handleBusScanComplete(const DeviceEventType& event);
-    void handleDriverRegistered(const DeviceEventType& event);
+    void handleDeviceAdded(const laminpie::system::event::DeviceEvent& event);
+    void handleDeviceRemoved(const laminpie::system::event::DeviceEvent& event);
+    void handleBusScanComplete(const laminpie::system::event::DeviceEvent& event);
+    void handleDriverRegistered(const laminpie::system::event::DeviceEvent& event);
     
     // 设备与驱动匹配
     void matchDriversWithDevice(std::shared_ptr<DeviceIdentifier> device);

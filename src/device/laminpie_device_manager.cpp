@@ -3,7 +3,10 @@
 #include "esp_log.h"
 #include <algorithm>
 #include <memory>
+#include "src/core/systems/framework/laminpie_system_event_type.hpp"
+
 namespace laminpie::device {
+
 DeviceManager::DeviceManager() : _running(true), _initialized(false) {
     //初始桶数(bucket)指定
     _buses.reserve(10);       // 预期存储约10个总线
@@ -22,36 +25,39 @@ bool DeviceManager::start() {
     
     if (_initialized) return true;
     
-    // 启动事件分发器
-    _eventDispatcher.start();
+    // 初始化事件分发器
+    _eventDispatcher.Init();
     
     // 注册事件监听器
-    _eventListenerIds.push_back(_eventDispatcher.addEventListener(
+    _eventListenerIds.push_back(_eventDispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
         DeviceEventType::kDeviceAdd, 
-        [this](const Event& e) { this->handleDeviceAdded(e); }
+        [this](const laminpie::system::event::DeviceEvent& e) { this->handleDeviceAdded(e); }
     ));
     
-    _eventListenerIds.push_back(_eventDispatcher.addEventListener(
+    _eventListenerIds.push_back(_eventDispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
         DeviceEventType::kDeviceRemove, 
-        [this](const Event& e) { this->handleDeviceRemoved(e); }
+        [this](const laminpie::system::event::DeviceEvent& e) { this->handleDeviceRemoved(e); }
     ));
     
-    _eventListenerIds.push_back(_eventDispatcher.addEventListener(
+    _eventListenerIds.push_back(_eventDispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
         DeviceEventType::kBusScanComplete, 
-        [this](const Event& e) { this->handleBusScanComplete(e); }
+        [this](const laminpie::system::event::DeviceEvent& e) { this->handleBusScanComplete(e); }
     ));
     
-    _eventListenerIds.push_back(_eventDispatcher.addEventListener(
+    _eventListenerIds.push_back(_eventDispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
         DeviceEventType::kDriverRegistered, 
-        [this](const Event& e) { this->handleDriverRegistered(e); }
+        [this](const laminpie::system::event::DeviceEvent& e) { this->handleDriverRegistered(e); }
     ));
     
     _initialized = true;
 
     // 为每个驱动发送注册事件
     for (const auto& driver : _drivers) {
-        auto event = std::make_shared<Event>(DeviceEventType::kDriverRegistered, driver->getName());
-        _eventDispatcher.dispatchEvent(event);
+        // 创建一个空的设备标识符作为占位符
+        auto emptyDevice = std::make_shared<DeviceIdentifier>();
+        auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+            DeviceEventType::kDriverRegistered, emptyDevice);
+        _eventDispatcher.dispatchEvent(*event);
     }
 
     // 让每个总线扫描设备
@@ -60,8 +66,10 @@ bool DeviceManager::start() {
     }
     
     // 发送总线扫描完成事件
-    auto event = std::make_shared<Event>(DeviceEventType::kBusScanComplete, "bus_scan_complete");
-    _eventDispatcher.dispatchEvent(event);
+    auto emptyDevice = std::make_shared<DeviceIdentifier>();
+    auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+        DeviceEventType::kBusScanComplete, emptyDevice);
+    _eventDispatcher.dispatchEvent(*event);
 
     // 创建设备管理器任务
     xTaskCreate(
@@ -90,9 +98,6 @@ void DeviceManager::shutdown() {
     }
     _eventListenerIds.clear();
     
-    // 关闭事件分发器
-    _eventDispatcher.stop();
-    
     // 释放资源
     _devices.clear();
     _drivers.clear();
@@ -113,8 +118,9 @@ void DeviceManager::scanToAddDevices() {
             }
         }
 
-        auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceAdd, device_list);
-        _eventDispatcher.dispatchEvent(event);
+        auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+            DeviceEventType::kDeviceAdd, device_list);
+        _eventDispatcher.dispatchEvent(*event);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
@@ -157,16 +163,16 @@ bool DeviceManager::registerDriver(std::shared_ptr<Driver> driver) {
     _drivers.push_back(driver);
 
     if (_initialized) {
-        auto event = std::make_shared<Event>(DeviceEventType::kDriverRegistered, driver->getName());
-        _eventDispatcher.dispatchEvent(event);
+        auto emptyDevice = std::make_shared<DeviceIdentifier>();
+        auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+            DeviceEventType::kDriverRegistered, emptyDevice);
+        _eventDispatcher.dispatchEvent(*event);
     }
     
     return true;
 }
 
-void DeviceManager::handleDeviceAdded(const Event& event) {
-    const DeviceEvent& devEvent = static_cast<const DeviceEvent&>(event);
-    
+void DeviceManager::handleDeviceAdded(const laminpie::system::event::DeviceEvent& devEvent) {
     std::lock_guard<std::mutex> lock(_mutex);
     
     // 处理设备列表
@@ -222,11 +228,11 @@ void DeviceManager::matchDriversWithDevice(std::shared_ptr<DeviceIdentifier> dev
                             _driverDeviceMap.insert({driverName, device->id});
                             
                             // 触发设备就绪事件
-                            auto readyEvent = std::make_shared<DeviceEvent>(
+                            auto readyEvent = std::make_shared<laminpie::system::event::DeviceEvent>(
                                 DeviceEventType::kDeviceReady,
                                 device
                             );
-                            _eventDispatcher.dispatchEvent(readyEvent);
+                            _eventDispatcher.dispatchEvent(*readyEvent);
                             
                             break;
                         }else{
@@ -263,8 +269,7 @@ std::shared_ptr<Driver> DeviceManager::getDeviceDriver(const std::string& device
     return nullptr;
 }
 
-void DeviceManager::handleDeviceRemoved(const Event& event) {
-    const DeviceEvent& devEvent = static_cast<const DeviceEvent&>(event);
+void DeviceManager::handleDeviceRemoved(const laminpie::system::event::DeviceEvent& devEvent) {
     std::shared_ptr<DeviceIdentifier> device = devEvent.device;
     
     std::lock_guard<std::mutex> lock(_mutex);
@@ -300,7 +305,7 @@ void DeviceManager::handleDeviceRemoved(const Event& event) {
     }
 }
 
-void DeviceManager::handleBusScanComplete(const Event& event) {
+void DeviceManager::handleBusScanComplete(const laminpie::system::event::DeviceEvent& devEvent) {
     // 总线扫描完成后，可以执行一些特定操作
     // 例如：检查是否有未匹配驱动的设备，打印设备状态等
     
@@ -321,73 +326,65 @@ void DeviceManager::handleBusScanComplete(const Event& event) {
     }
 }
 
-void DeviceManager::handleDriverRegistered(const Event& event) {
+void DeviceManager::handleDriverRegistered(const laminpie::system::event::DeviceEvent& devEvent) {
     // 新驱动注册后，尝试与现有设备匹配
-    std::string driverName = event.sourceId;
+    // 注意：这里需要从事件中获取驱动名称，但DeviceEvent没有sourceId字段
+    // 我们需要通过其他方式获取驱动信息
     
     std::lock_guard<std::mutex> lock(_mutex);
     
-    // 查找新注册的驱动
-    auto driverIt = std::find_if(_drivers.begin(), _drivers.end(),
-                            [&driverName](const std::shared_ptr<Driver>& d){
-                                return d->getName() == driverName;
-                            });
-    if (driverIt == _drivers.end()) {
-        return; // 驱动不存在，可能是事件数据错误
-    }
-    
-    std::shared_ptr<Driver> newDriver = *driverIt;
-    
-    // 尝试将新驱动与所有未匹配的设备匹配
-    for (const auto& device : _devices) {
-        // 跳过已经匹配驱动的设备
-        if (_deviceDriverMap.find(device->id) != _deviceDriverMap.end()) {
-            continue;
-        }
-        
-        // 检查新驱动是否支持该设备
-        for (const auto& supportedId : newDriver->getSupportedDeviceIds()) {
-            if (supportedId.busType == device->busType && supportedId.id == device->id) {
-                bool matched = false;
-                
-                if (device->isI2cDevice()) {
-                    if (supportedId.getI2cAddress() == 0 ||
-                        supportedId.getI2cAddress() == device->getI2cAddress()) {
-                        matched = true;
-                    }
-                } else if (device->isSpiDevice()) {
-                    if (supportedId.getSpiChipSelect() == device->getSpiChipSelect()) {
-                        matched = true;
-                    }
-                } else if (device->isUsbDevice()) {
-                    if (supportedId.getUsbVendorId() == device->getUsbVendorId() &&
-                        supportedId.getUsbProductId() == device->getUsbProductId()) {
-                        matched = true;
-                    }
-                }
-                
-                if (matched && newDriver->probeDevice(*device)) {
-                    for (int i = 0; i < DEVICE_SETUP_RETRY_COUNT; i++) {
-                        if (newDriver->setupDevice(device)) {
-                            _deviceDriverMap[device->id] = newDriver;
-                            
-                            // 添加驱动到设备的双向映射
-                            _driverDeviceMap.insert({driverName, device->id});
-                            
-                            // 触发设备就绪事件
-                            auto readyEvent = std::make_shared<DeviceEvent>(
-                                DeviceEventType::kDeviceReady,
-                                device
-                            );
-                            _eventDispatcher.dispatchEvent(readyEvent);
-                            
-                            break;
-                        } else {
-                            vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // 尝试将新注册的驱动与所有未匹配的设备匹配
+    for (const auto& driver : _drivers) {
+        for (const auto& device : _devices) {
+            // 跳过已经匹配驱动的设备
+            if (_deviceDriverMap.find(device->id) != _deviceDriverMap.end()) {
+                continue;
+            }
+            
+            // 检查驱动是否支持该设备
+            for (const auto& supportedId : driver->getSupportedDeviceIds()) {
+                if (supportedId.busType == device->busType && supportedId.id == device->id) {
+                    bool matched = false;
+                    
+                    if (device->isI2cDevice()) {
+                        if (supportedId.getI2cAddress() == 0 ||
+                            supportedId.getI2cAddress() == device->getI2cAddress()) {
+                            matched = true;
+                        }
+                    } else if (device->isSpiDevice()) {
+                        if (supportedId.getSpiChipSelect() == device->getSpiChipSelect()) {
+                            matched = true;
+                        }
+                    } else if (device->isUsbDevice()) {
+                        if (supportedId.getUsbVendorId() == device->getUsbVendorId() &&
+                            supportedId.getUsbProductId() == device->getUsbProductId()) {
+                            matched = true;
                         }
                     }
+                    
+                    if (matched && driver->probeDevice(*device)) {
+                        for (int i = 0; i < DEVICE_SETUP_RETRY_COUNT; i++) {
+                            if (driver->setupDevice(device)) {
+                                _deviceDriverMap[device->id] = driver;
+                                
+                                // 添加驱动到设备的双向映射
+                                _driverDeviceMap.insert({driver->getName(), device->id});
+                                
+                                // 触发设备就绪事件
+                                auto readyEvent = std::make_shared<laminpie::system::event::DeviceEvent>(
+                                    DeviceEventType::kDeviceReady,
+                                    device
+                                );
+                                _eventDispatcher.dispatchEvent(*readyEvent);
+                                
+                                break;
+                            } else {
+                                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                            }
+                        }
+                    }
+                    break;
                 }
-                break;
             }
         }
     }
@@ -435,12 +432,15 @@ std::vector<std::shared_ptr<DeviceIdentifier>> DeviceManager::findDevicesByType(
 }
 
 void DeviceManager::notifyDeviceReady(std::shared_ptr<DeviceIdentifier> device) {
-    auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceReady, device);
-    _eventDispatcher.dispatchEvent(event);
+    auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+        DeviceEventType::kDeviceReady, device);
+    _eventDispatcher.dispatchEvent(*event);
 }
 
 void DeviceManager::notifyDeviceRemoved(std::shared_ptr<DeviceIdentifier> device) {
-    auto event = std::make_shared<DeviceEvent>(DeviceEventType::kDeviceRemove, device);
-    _eventDispatcher.dispatchEvent(event);
+    auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+        DeviceEventType::kDeviceRemove, device);
+    _eventDispatcher.dispatchEvent(*event);
 }
+
 }

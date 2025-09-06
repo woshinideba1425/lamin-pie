@@ -340,7 +340,7 @@ namespace laminpie::utils {
             va_end(args);
             return returnValue;
         }
-        return true;
+        return returnValue;
     }
 
     /**
@@ -355,7 +355,7 @@ namespace laminpie::utils {
             va_end(args);
             return returnValue;
         }
-        return true;
+        return returnValue;
     }
 
     template <typename RetT>
@@ -406,7 +406,7 @@ namespace laminpie::utils {
             DefaultErrorLog("%s: value %d not in range [%d, %d]", buffer, value, min, max);
             return returnValue;
         }
-        return true;
+        return returnValue;
     }
 
     /**
@@ -414,17 +414,48 @@ namespace laminpie::utils {
      */
     template<typename T, typename RetT>
     inline RetT CheckNullAndReturn(T value, RetT returnValue, const char* format, ...) {
-        if (value == nullptr) {
-            va_list args;
-            va_start(args, format);
-            char buffer[256];
-            vsnprintf(buffer, sizeof(buffer), format, args);
-            va_end(args);
-            
-            DefaultErrorLog("%s: value is nullptr", buffer);
-            return returnValue;
+        // 检查指针类型
+        if constexpr (std::is_pointer_v<T>) {
+            if (value == nullptr) {
+                va_list args;
+                va_start(args, format);
+                char buffer[256];
+                vsnprintf(buffer, sizeof(buffer), format, args);
+                va_end(args);
+                
+                DefaultErrorLog("%s: value is nullptr", buffer);
+                return returnValue;
+            }
         }
-        return true;
+        // 检查字符串类型
+        else if constexpr (std::is_same_v<T, std::string>) {
+            if (value.empty()) {
+                va_list args;
+                va_start(args, format);
+                char buffer[256];
+                vsnprintf(buffer, sizeof(buffer), format, args);
+                va_end(args);
+                
+                DefaultErrorLog("%s: string is empty", buffer);
+                return returnValue;
+            }
+        }
+        // 其他类型，检查是否为假值
+        else {
+            if (!value) {
+                va_list args;
+                va_start(args, format);
+                char buffer[256];
+                vsnprintf(buffer, sizeof(buffer), format, args);
+                va_end(args);
+                
+                DefaultErrorLog("%s: value is invalid", buffer);
+                return returnValue;
+            }
+        }
+        
+        // 如果检查通过，返回默认值（通常是成功值）
+        return RetT{};
     }
 
     /**

@@ -72,4 +72,83 @@ menu "LAMINPIE configuration"
             rsource "src/device/Kconfig"
         endif
     endmenu
+
+    menu "LAMINPIE - USE OS"
+
+        choice LAMINPIE_USE_OS
+            prompt "Use OS"
+            default LAMINPIE_USE_OS_STD_THREAD
+            help
+                Select the operating system for LAMINPIE threading support.
+                STD_THREAD uses C++ standard library (default).
+                PTHREAD uses POSIX threads.
+                FREERTOS uses FreeRTOS.
+                RTTHREAD uses RT-Thread.
+
+            config LAMINPIE_USE_OS_NONE
+                bool "NONE"
+                help
+                    No operating system support. Threading functions will be stubs.
+
+            config LAMINPIE_USE_OS_STD_THREAD
+                bool "STD_THREAD"
+                help
+                    Use C++ standard library threading (std::thread, std::mutex, etc.)
+
+            config LAMINPIE_USE_OS_PTHREAD
+                bool "PTHREAD"
+                help
+                    Use POSIX threads (pthread)
+
+            config LAMINPIE_USE_OS_FREERTOS
+                bool "FREERTOS"
+                help
+                    Use FreeRTOS threading
+
+            config LAMINPIE_USE_OS_RTTHREAD
+                bool "RTTHREAD"
+                help
+                    Use RT-Thread threading
+
+            config LAMINPIE_USE_OS_CUSTOM
+                bool "CUSTOM"
+                help
+                    Use custom OS implementation
+                    
+        endchoice
+
+        # 数值映射
+        config LAMINPIE_USE_OS_VALUE
+            int
+            default 0 if LAMINPIE_USE_OS_NONE
+            default 1 if LAMINPIE_USE_OS_STD_THREAD
+            default 2 if LAMINPIE_USE_OS_PTHREAD
+            default 3 if LAMINPIE_USE_OS_FREERTOS
+            default 4 if LAMINPIE_USE_OS_RTTHREAD
+            default 5 if LAMINPIE_USE_OS_CUSTOM
+
+        # 自定义操作系统配置
+        if LAMINPIE_USE_OS_CUSTOM
+            config LAMINPIE_OS_CUSTOM_INCLUDE
+                string "Custom OS include file"
+                default "my_os_porting.h"
+                help
+                    Path to the custom OS porting header file
+        endif
+
+        # 线程配置
+        config LAMINPIE_THREAD_STACK_SIZE_DEFAULT
+            int "Default thread stack size"
+            default 4096
+            help
+                Default stack size for threads in bytes
+
+        config LAMINPIE_THREAD_PRIORITY_DEFAULT
+            int "Default thread priority"
+            default 2
+            range 0 4
+            help
+                Default thread priority (0=lowest, 4=highest)
+
+    endmenu
 endmenu
