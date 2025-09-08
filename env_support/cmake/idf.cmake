@@ -157,3 +157,22 @@ idf_component_register(SRCS ${SRCS_C} ${SRCS_CPP}
                   REQUIRES ${LAMINPIE_REQUIRES}
                   PRIV_REQUIRES ${LAMINPIE_PRIV_REQUIRES}
 )
+
+# 主测试开关 - 控制是否编译测试程序
+option(BUILD_TESTS "Build test programs" ON)
+
+# 如果测试被启用，转到测试目录进行编译
+if(BUILD_TESTS)
+    message(STATUS "Building LaminPie tests...")
+    
+    # 添加测试子目录
+    add_subdirectory(${LAMINPIE_ROOT_DIR}/test)
+    
+    # 打印测试配置信息
+    message(STATUS "=== LaminPie Test Configuration ===")
+    message(STATUS "Tests enabled: ${BUILD_TESTS}")
+    message(STATUS "Test directory: ${LAMINPIE_ROOT_DIR}/test")
+    message(STATUS "===================================")
+else()
+    message(STATUS "Tests are disabled by BUILD_TESTS=OFF")
+endif()
