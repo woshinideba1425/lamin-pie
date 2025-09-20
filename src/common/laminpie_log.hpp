@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "sdkconfig.h"
 
 // Check C++20 support
 #if __cplusplus >= 202002L && defined(__cpp_nontype_template_args)
@@ -23,7 +24,6 @@
 #endif
 
 // 日志级别定义
-#define LP_LOG_LEVEL_TRACE 0
 #define LP_LOG_LEVEL_DEBUG 1
 #define LP_LOG_LEVEL_INFO  2
 #define LP_LOG_LEVEL_WARN  3
@@ -31,8 +31,16 @@
 #define LP_LOG_LEVEL_NONE  5
 
 // 默认日志级别
-#ifndef LP_LOG_LEVEL
+#if CONFIG_LAMINPIE_LOG_LEVEL_DEBUG
+#define LP_LOG_LEVEL LP_LOG_LEVEL_DEBUG
+#elif CONFIG_LAMINPIE_LOG_LEVEL_INFO
 #define LP_LOG_LEVEL LP_LOG_LEVEL_INFO
+#elif CONFIG_LAMINPIE_LOG_LEVEL_WARN
+#define LP_LOG_LEVEL LP_LOG_LEVEL_WARN
+#elif CONFIG_LAMINPIE_LOG_LEVEL_ERROR
+#define LP_LOG_LEVEL LP_LOG_LEVEL_ERROR
+#else   
+#define LP_LOG_LEVEL LP_LOG_LEVEL_NONE
 #endif
 
 #if defined(PLATFORM_ESP32)

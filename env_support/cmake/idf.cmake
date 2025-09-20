@@ -150,59 +150,54 @@ list(APPEND SRCS_C ${PORTING_SRCS_C})
 list(APPEND SRCS_CPP ${PORTING_SRCS_CPP})
 list(APPEND LAMINPIE_INC_DIRS ${PORTING_SRC_DIR})
 
-# 主测试开关 - 控制是否编译测试程序
-option(BUILD_TESTS "Build test programs" ON)
-
-# 测试相关编译定义
-if(BUILD_TESTS)
+# 测试相关编译定义 - 从Kconfig读取配置
+if(CONFIG_LAMINPIE_ENABLE_TEST)
     message(STATUS "Building LaminPie tests...")
     
-    # 测试细粒度控制选项
-    option(ENABLE_LOG_TESTS "Enable log system tests" ON)
-    option(ENABLE_EVENT_SYSTEM_TEST "Enable event system test" ON)
-    option(ENABLE_EVENT_STRESS_TEST "Enable event stress test" ON)
-    option(ENABLE_APP_SCHEDULER_TEST "Enable app scheduler test" OFF)
-    option(ENABLE_DEVICE_SYSTEM_TEST "Enable device system test" OFF)
-    option(ENABLE_THREAD_SYSTEM_TEST "Enable thread system test" ON)
-    option(ENABLE_PLATFORM_COMPATIBILITY_TEST "Enable platform compatibility test" OFF)
-    option(ENABLE_KCONFIG_TEST "Enable KConfig test" OFF)
-    option(ENABLE_MEMORY_PERFORMANCE_TEST "Enable memory performance test" OFF)
-    
-    # 设置测试相关的编译定义
-    if(ENABLE_LOG_TESTS)
+    # 设置测试相关的编译定义 - 从Kconfig读取
+    if(CONFIG_LAMINPIE_TEST_ENABLE_LOG_SYSTEM)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_LOG_TESTS=1")
+        message(STATUS "Log System Tests: ENABLED")
     endif()
     
-    if(ENABLE_EVENT_SYSTEM_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_EVENT_SYSTEM)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_EVENT_SYSTEM_TEST=1")
+        message(STATUS "Event System Tests: ENABLED")
     endif()
     
-    if(ENABLE_EVENT_STRESS_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_EVENT_STRESS)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_EVENT_STRESS_TEST=1")
+        message(STATUS "Event Stress Tests: ENABLED")
     endif()
     
-    if(ENABLE_APP_SCHEDULER_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_APP_SCHEDULER)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_APP_SCHEDULER_TEST=1")
+        message(STATUS "App Scheduler Tests: ENABLED")
     endif()
     
-    if(ENABLE_DEVICE_SYSTEM_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_DEVICE_SYSTEM)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_DEVICE_SYSTEM_TEST=1")
+        message(STATUS "Device System Tests: ENABLED")
     endif()
     
-    if(ENABLE_THREAD_SYSTEM_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_THREAD_SYSTEM)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_THREAD_SYSTEM_TEST=1")
+        message(STATUS "Thread System Tests: ENABLED")
     endif()
     
-    if(ENABLE_PLATFORM_COMPATIBILITY_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_PLATFORM_COMPATIBILITY)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_PLATFORM_COMPATIBILITY_TEST=1")
+        message(STATUS "Platform Compatibility Tests: ENABLED")
     endif()
     
-    if(ENABLE_KCONFIG_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_KCONFIG)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_KCONFIG_TEST=1")
+        message(STATUS "KConfig Tests: ENABLED")
     endif()
     
-    if(ENABLE_MEMORY_PERFORMANCE_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_MEMORY_PERFORMANCE)
         list(APPEND LAMINPIE_COMPILE_OPTIONS "-DENABLE_MEMORY_PERFORMANCE_TEST=1")
+        message(STATUS "Memory Performance Tests: ENABLED")
     endif()
     
     # 添加测试源文件
@@ -215,61 +210,61 @@ if(BUILD_TESTS)
     list(APPEND SRCS_CPP ${TEST_SRC_DIR}/test_main.cpp)
     list(APPEND LAMINPIE_INC_DIRS ${TEST_SRC_DIR}/include)
     
-    # 单元测试文件
-    if(ENABLE_LOG_TESTS)
+    # 单元测试文件 - 使用Kconfig配置
+    if(CONFIG_LAMINPIE_TEST_ENABLE_LOG_SYSTEM)
         list(APPEND SRCS_CPP ${TEST_UNIT_SRC_DIR}/test_log_system.cpp)
     endif()
     
-    if(ENABLE_PLATFORM_COMPATIBILITY_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_PLATFORM_COMPATIBILITY)
         list(APPEND SRCS_CPP ${TEST_UNIT_SRC_DIR}/test_platform_compatibility.cpp)
     endif()
     
-    if(ENABLE_KCONFIG_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_KCONFIG)
         list(APPEND SRCS_CPP ${TEST_UNIT_SRC_DIR}/test_kconfig.cpp)
     endif()
     
-    # 集成测试文件
-    if(ENABLE_EVENT_SYSTEM_TEST)
+    # 集成测试文件 - 使用Kconfig配置
+    if(CONFIG_LAMINPIE_TEST_ENABLE_EVENT_SYSTEM)
         list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_event_system.cpp)
     endif()
     
-    if(ENABLE_EVENT_STRESS_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_EVENT_STRESS)
         list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_event_stress.cpp)
     endif()
     
-    if(ENABLE_APP_SCHEDULER_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_APP_SCHEDULER)
         list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_app_scheduler.cpp)
     endif()
     
-    if(ENABLE_DEVICE_SYSTEM_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_DEVICE_SYSTEM)
         list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_device_system.cpp)
     endif()
     
-    if(ENABLE_THREAD_SYSTEM_TEST)
+    if(CONFIG_LAMINPIE_TEST_ENABLE_THREAD_SYSTEM)
         list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_thread_system.cpp)
     endif()
     
-    # 性能测试文件
-    if(ENABLE_MEMORY_PERFORMANCE_TEST)
+    # 性能测试文件 - 使用Kconfig配置
+    if(CONFIG_LAMINPIE_TEST_ENABLE_MEMORY_PERFORMANCE)
         list(APPEND SRCS_CPP ${TEST_PERFORMANCE_SRC_DIR}/test_memory_performance.cpp)
     endif()
     
     # 打印测试配置信息
     message(STATUS "=== LaminPie Test Configuration ===")
-    message(STATUS "Tests enabled: ${BUILD_TESTS}")
+    message(STATUS "Tests enabled: ${CONFIG_LAMINPIE_ENABLE_TEST}")
     message(STATUS "Test directory: ${TEST_SRC_DIR}")
-    message(STATUS "Log tests: ${ENABLE_LOG_TESTS}")
-    message(STATUS "Event system tests: ${ENABLE_EVENT_SYSTEM_TEST}")
-    message(STATUS "Event stress tests: ${ENABLE_EVENT_STRESS_TEST}")
-    message(STATUS "App scheduler tests: ${ENABLE_APP_SCHEDULER_TEST}")
-    message(STATUS "Device system tests: ${ENABLE_DEVICE_SYSTEM_TEST}")
-    message(STATUS "Thread system tests: ${ENABLE_THREAD_SYSTEM_TEST}")
-    message(STATUS "Platform compatibility tests: ${ENABLE_PLATFORM_COMPATIBILITY_TEST}")
-    message(STATUS "KConfig tests: ${ENABLE_KCONFIG_TEST}")
-    message(STATUS "Memory performance tests: ${ENABLE_MEMORY_PERFORMANCE_TEST}")
+    message(STATUS "Log tests: ${CONFIG_LAMINPIE_TEST_ENABLE_LOG_SYSTEM}")
+    message(STATUS "Event system tests: ${CONFIG_LAMINPIE_TEST_ENABLE_EVENT_SYSTEM}")
+    message(STATUS "Event stress tests: ${CONFIG_LAMINPIE_TEST_ENABLE_EVENT_STRESS}")
+    message(STATUS "App scheduler tests: ${CONFIG_LAMINPIE_TEST_ENABLE_APP_SCHEDULER}")
+    message(STATUS "Device system tests: ${CONFIG_LAMINPIE_TEST_ENABLE_DEVICE_SYSTEM}")
+    message(STATUS "Thread system tests: ${CONFIG_LAMINPIE_TEST_ENABLE_THREAD_SYSTEM}")
+    message(STATUS "Platform compatibility tests: ${CONFIG_LAMINPIE_TEST_ENABLE_PLATFORM_COMPATIBILITY}")
+    message(STATUS "KConfig tests: ${CONFIG_LAMINPIE_TEST_ENABLE_KCONFIG}")
+    message(STATUS "Memory performance tests: ${CONFIG_LAMINPIE_TEST_ENABLE_MEMORY_PERFORMANCE}")
     message(STATUS "===================================")
 else()
-    message(STATUS "Tests are disabled by BUILD_TESTS=OFF")
+    message(STATUS "Tests are disabled by CONFIG_LAMINPIE_ENABLE_TEST=n")
 endif()
 
 # Register component

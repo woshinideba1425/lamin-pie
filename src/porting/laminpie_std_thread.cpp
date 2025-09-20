@@ -15,10 +15,10 @@
 using namespace laminate;
 using namespace laminate::threading;
 
-// 添加通用的Err函数模板
+// 添加通用的Err函数模板 - 修复模板参数问题
 template<typename T, typename E>
 Result<T> Err(E error) {
-    return Result<T>(std::move(error));
+    return Result<T>(std::make_shared<E>(std::move(error)));
 }
 
 struct laminpie_thread_t {
@@ -89,43 +89,78 @@ Result<laminpie_thread_t*> laminpie_thread_create(
         
         // 创建线程 - 使用移动语义避免拷贝问题
         auto thread_ptr = thread_obj.get();
+        LP_LOG_DEBUG("THREAD_PORTING", "About to create thread, thread_ptr=%p", thread_ptr);
+        LP_LOG_DEBUG("THREAD_PORTING", "Thread callback=%p, user_data=%p", 
+                    (void*)thread_ptr->callback, thread_ptr->user_data);
+        
         thread_obj->thread = std::make_unique<std::thread>([thread_ptr]() {
-            LP_LOG_DEBUG("THREAD_PORTING", "Thread started");
+            LP_LOG_DEBUG("THREAD_PORTING", "Thread lambda started, thread_ptr=%p", thread_ptr);
             
-            {
-                std::lock_guard<std::mutex> lock(thread_ptr->state_mutex);
-                thread_ptr->running = true;
-            }
-            thread_ptr->state_cv.notify_all();
+            // 设置运行状态
+            LP_LOG_DEBUG("THREAD_PORTING", "Setting running=true");
+            thread_ptr->running = true;
+            LP_LOG_DEBUG("THREAD_PORTING", "Running flag set, value=%d", thread_ptr->running.load());
             
             // 执行用户回调
+            LP_LOG_DEBUG("THREAD_PORTING", "About to call user callback");
             try {
-                thread_ptr->callback(thread_ptr->user_data);
+                if (thread_ptr->callback) {
+                    thread_ptr->callback(thread_ptr->user_data);
+                    LP_LOG_DEBUG("THREAD_PORTING", "User callback completed successfully");
+                } else {
+                    LP_LOG_ERROR("THREAD_PORTING", "Callback is null!");
+                }
             } catch (const std::exception& e) {
                 LP_LOG_ERROR("THREAD_PORTING", "Thread callback exception: %s", e.what());
             } catch (...) {
                 LP_LOG_ERROR("THREAD_PORTING", "Thread callback unknown exception");
             }
             
+            // 等待被显式停止，而不是立即退出
+            LP_LOG_DEBUG("THREAD_PORTING", "Callback completed, waiting for stop signal...");
+            std::unique_lock<std::mutex> lock(thread_ptr->state_mutex);
+            thread_ptr->state_cv.wait(lock, [thread_ptr] { 
+                return thread_ptr->should_stop.load(); 
+            });
+            
             // 线程结束
-            {
-                std::lock_guard<std::mutex> lock(thread_ptr->state_mutex);
-                thread_ptr->running = false;
-            }
-            thread_ptr->state_cv.notify_all();
+            LP_LOG_DEBUG("THREAD_PORTING", "Setting running=false");
+            thread_ptr->running = false;
             
             LP_LOG_DEBUG("THREAD_PORTING", "Thread finished");
         });
         
-        // 等待线程启动
-        {
-            std::unique_lock<std::mutex> lock(thread_obj->state_mutex);
-            if (!thread_obj->state_cv.wait_for(lock, std::chrono::milliseconds(1000), 
-                [thread_ptr] { return thread_ptr->running.load(); })) {
-                LP_LOG_ERROR("THREAD_PORTING", "Thread failed to start within timeout");
-                return Err<laminpie_thread_t*>(ThreadCreationError("Thread failed to start within timeout"));
+        LP_LOG_DEBUG("THREAD_PORTING", "Thread object created, checking if joinable: %s", 
+                    thread_obj->thread->joinable() ? "true" : "false");
+        
+        // 等待线程启动 - 使用简单的轮询方式
+        LP_LOG_DEBUG("THREAD_PORTING", "Waiting for thread to start...");
+        
+        // 轮询等待线程启动，最多等待1秒
+        int retry_count = 0;
+        const int max_retries = 100; // 100 * 10ms = 1秒
+        bool started = false;
+        
+        while (retry_count < max_retries && !started) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            started = thread_ptr->running.load();
+            retry_count++;
+            
+            if (retry_count % 10 == 0) { // 每100ms打印一次状态
+                LP_LOG_DEBUG("THREAD_PORTING", "Waiting for thread start... retry %d/%d, running=%d", 
+                            retry_count, max_retries, started);
             }
         }
+        
+        if (!started) {
+            LP_LOG_ERROR("THREAD_PORTING", "Thread failed to start after %d retries - running flag is false", retry_count);
+            LP_LOG_ERROR("THREAD_PORTING", "Thread joinable: %s", 
+                        thread_obj->thread->joinable() ? "true" : "false");
+            return Err<laminpie_thread_t*>(ThreadCreationError("Thread failed to start after timeout"));
+        }
+        
+        LP_LOG_DEBUG("THREAD_PORTING", "Thread started successfully after %d retries, running status: %d", 
+                    retry_count, thread_ptr->running.load());
         
         LP_LOG_INFO("THREAD_PORTING", "Thread created successfully");
         return Ok(thread_obj.release());
@@ -187,6 +222,11 @@ Result<void> laminpie_thread_join(laminpie_thread_t *thread, uint32_t timeout_ms
     }
     
     try {
+        // 发送停止信号
+        LP_LOG_DEBUG("THREAD_PORTING", "Sending stop signal to thread");
+        thread->should_stop = true;
+        thread->state_cv.notify_all();
+        
         if (timeout_ms == 0) {
             // 无限等待
             thread->thread->join();

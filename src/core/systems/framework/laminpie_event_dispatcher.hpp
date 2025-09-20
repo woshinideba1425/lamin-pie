@@ -190,12 +190,12 @@ public:
             for (auto it = listeners->begin(); it != listeners->end(); ++it) {
                 if (it->id == listenerId) {
                     listeners->erase(it);
-                    SYSTEM_EVENT_LOG_DEBUG("Removed event listener with ID: %u", listenerId);
+                    SYSTEM_EVENT_LOG_DEBUG("Removed event listener with ID: %" PRIu32, listenerId);
                     return true;
                 }
             }
         }
-        SYSTEM_EVENT_LOG_WARN("Event listener with ID %u not found", listenerId);
+        SYSTEM_EVENT_LOG_WARN("Event listener with ID %" PRIu32 " not found", listenerId);
         return false;
     }
     
@@ -245,7 +245,9 @@ public:
         for (const auto& listener_list : listeners_to_call) {
             for (const auto& listener : *listener_list) {
                 try {
-                    listener.callback(event);
+                    // 将具体事件类型转换为基类引用
+                    const IEvent& baseEvent = static_cast<const IEvent&>(event);
+                    listener.callback(baseEvent);
                 } catch (const std::exception& e) {
                     SYSTEM_EVENT_LOG_ERROR("Exception in event callback: %s", e.what());
                 }

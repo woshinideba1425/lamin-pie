@@ -1,0 +1,67 @@
+menu "LaminPie Test Configuration"
+
+    # 基础测试开关
+    config LAMINPIE_TEST_ENABLE_LOG_SYSTEM
+        bool "Enable Log System Tests"
+        default y
+        help
+            Enable unit tests for the log system including log levels,
+            module logging, and performance tests.
+
+    config LAMINPIE_TEST_ENABLE_EVENT_SYSTEM
+        bool "Enable Event System Tests"
+        default y
+        help
+            Enable integration tests for the event system including
+            event registration, dispatch, and async processing.
+
+    config LAMINPIE_TEST_ENABLE_EVENT_STRESS
+        bool "Enable Event Stress Tests"
+        default n
+        help
+            Enable stress tests for high-frequency event handling
+            and concurrent event processing.
+
+    config LAMINPIE_TEST_ENABLE_APP_SCHEDULER
+        bool "Enable App Scheduler Tests"
+        default n
+        help
+            Enable tests for application scheduler including
+            app startup, lifecycle, and multiple app management.
+
+    config LAMINPIE_TEST_ENABLE_DEVICE_SYSTEM
+        bool "Enable Device System Tests"
+        default n
+        help
+            Enable tests for device management system including
+            device registration, discovery, and lifecycle.
+
+    config LAMINPIE_TEST_ENABLE_THREAD_SYSTEM
+        bool "Enable Thread System Tests"
+        default y
+        help
+            Enable tests for thread system including thread creation,
+            destruction, and priority management.
+
+    config LAMINPIE_TEST_ENABLE_PLATFORM_COMPATIBILITY
+        bool "Enable Platform Compatibility Tests"
+        default n
+        help
+            Enable cross-platform compatibility tests for threading,
+            logging, and conditional compilation.
+
+    config LAMINPIE_TEST_ENABLE_KCONFIG
+        bool "Enable KConfig Tests"
+        default n
+        help
+            Enable tests for KConfig system including configuration
+            loading and value validation.
+
+    config LAMINPIE_TEST_ENABLE_MEMORY_PERFORMANCE
+        bool "Enable Memory Performance Tests"
+        default n
+        help
+            Enable performance tests for memory allocation speed
+            and fragmentation analysis.
+
+endmenu

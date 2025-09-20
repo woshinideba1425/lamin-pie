@@ -10,19 +10,27 @@ private:
     std::vector<laminpie::system::event::DeviceEvent> received_events;
     
 public:
-    EventSystemTest() : dispatcher(laminpie::system::event::LaminPie_EventDispatcher::getInstance()) {}
+    EventSystemTest() : dispatcher(laminpie::system::event::LaminPie_EventDispatcher::getInstance()) {
+        dispatcher.start();
+    }
+    ~EventSystemTest() {
+        dispatcher.stop();
+    }
     
     TestResult test_event_registration() {
         // 测试事件监听器注册
-        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+        uint32_t listener_id = dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
             laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
             [this](const laminpie::system::event::DeviceEvent& event) {
                 received_events.push_back(event);
-                return true;
             }
         );
         
         TEST_ASSERT(dispatcher.getListenerCount() > 0);
+        
+        // 清理注册的监听器，避免影响后续测试
+        dispatcher.removeEventListener(listener_id);
+        
         return TestResult::kPass;
     }
     
@@ -30,14 +38,20 @@ public:
         // 测试事件分发
         received_events.clear();
         
+        printf("DEBUG: Starting test_event_dispatch\n");
+        printf("DEBUG: Listener count before registration: %zu\n", dispatcher.getListenerCount());
+        
         // 注册监听器
-        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+        uint32_t listener_id = dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
             laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
             [this](const laminpie::system::event::DeviceEvent& event) {
+                printf("DEBUG: Event callback triggered! Device ID: %s\n", event.device->id.c_str());
                 received_events.push_back(event);
-                return true;
             }
         );
+        
+        printf("DEBUG: Listener registered with ID: %lu\n", listener_id);
+        printf("DEBUG: Listener count after registration: %zu\n", dispatcher.getListenerCount());
         
         // 发送事件
         auto device_id = std::make_shared<DeviceIdentifier>(
@@ -48,7 +62,13 @@ public:
             device_id
         );
         
+        printf("DEBUG: About to dispatch event\n");
         dispatcher.dispatchEvent(event);
+        printf("DEBUG: Event dispatched, received_events.size() = %zu\n", received_events.size());
+        
+        // 清理注册的监听器
+        dispatcher.removeEventListener(listener_id);
+        printf("DEBUG: Listener removed, count after removal: %zu\n", dispatcher.getListenerCount());
         
         TEST_ASSERT(received_events.size() == 1);
         TEST_ASSERT(received_events[0].device->id == "test_device");
@@ -60,17 +80,20 @@ public:
         // 测试异步事件处理
         received_events.clear();
         
-        // 启动事件分发器
-        dispatcher.start();
+        printf("DEBUG: Starting test_async_event_processing\n");
+        printf("DEBUG: Listener count before registration: %zu\n", dispatcher.getListenerCount());
         
         // 注册监听器
-        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+        uint32_t listener_id = dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
             laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
             [this](const laminpie::system::event::DeviceEvent& event) {
+                printf("DEBUG: Async event callback triggered! Device ID: %s\n", event.device->id.c_str());
                 received_events.push_back(event);
-                return true;
             }
         );
+        
+        printf("DEBUG: Async listener registered with ID: %lu\n", listener_id);
+        printf("DEBUG: Listener count after registration: %zu\n", dispatcher.getListenerCount());
         
         // 异步发送事件
         auto device_id = std::make_shared<DeviceIdentifier>(
@@ -81,15 +104,21 @@ public:
             device_id
         );
         
+        printf("DEBUG: About to post async event\n");
         dispatcher.postEvent(event);
         
         // 等待事件处理
         PLATFORM_DELAY_MS(100);
         
+        printf("DEBUG: Async event processed, received_events.size() = %zu\n", received_events.size());
+        
+        // 清理注册的监听器
+        dispatcher.removeEventListener(listener_id);
+        printf("DEBUG: Async listener removed, count after removal: %zu\n", dispatcher.getListenerCount());
+        
         TEST_ASSERT(received_events.size() == 1);
         TEST_ASSERT(received_events[0].device->id == "async_device");
         
-        dispatcher.stop();
         return TestResult::kPass;
     }
 };

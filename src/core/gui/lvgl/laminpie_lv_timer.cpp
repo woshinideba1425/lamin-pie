@@ -18,7 +18,7 @@ LvTimer::LvTimer(TimerCallback callback, uint32_t period, void *user_data):
     _user_data{this, user_data}
 {
     LAMINPIE_LVGL_LOG_TRACE_ENTER_WITH_THIS();
-    LAMINPIE_LVGL_LOG_DEBUG("Param: callback(0x%p), period(%u), user_data(0x%p)", callback, period, user_data);
+    LAMINPIE_LVGL_LOG_DEBUG("Param: callback(0x%p), period(%" PRIu32 "), user_data(0x%p)", callback, period, user_data);
 
     CheckNullExit(callback, "Invalid callback");
     _native_handle = lv_timer_create([](lv_timer_t *t) {
@@ -104,7 +104,7 @@ bool LvTimer::setInterval(uint32_t interval_ms)
     LAMINPIE_LVGL_LOG_TRACE_ENTER_WITH_THIS();
 
     CheckFalseReturn(isValid(), false, "Invalid timer");
-    LAMINPIE_LVGL_LOG_DEBUG("Param: interval_ms(%u)", interval_ms);
+    LAMINPIE_LVGL_LOG_DEBUG("Param: interval_ms(%" PRIu32 ")", interval_ms);
 
     lv_timer_set_period(_native_handle, interval_ms);
 

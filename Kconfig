@@ -71,6 +71,17 @@ menu "LAMINPIE configuration"
         if LAMINPIE_ENABLE_DEVICE
             rsource "src/device/Kconfig"
         endif
+
+        menuconfig LAMINPIE_ENABLE_TEST
+            bool "Enable LaminPie Test Suite"
+            default n
+            help
+                Enable LaminPie test suite for development and validation.
+                This includes unit tests, integration tests, and performance tests.
+
+        if LAMINPIE_ENABLE_TEST
+            rsource "test/Kconfig"
+        endif
     endmenu
 
     menu "LAMINPIE - USE OS"

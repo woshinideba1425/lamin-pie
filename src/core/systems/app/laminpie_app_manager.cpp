@@ -187,7 +187,7 @@ void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
 
 void Laminpie_App_Manager::ProcessAppCloseEvent(const App_EventData_t& event)
 {
-    SYSTEM_APP_LOG_INFO("Received close event for app ID: %d", event.app_id);
+    SYSTEM_APP_LOG_INFO("Received close event for app ID: %d", event.id);
     
     // 找到对应的应用并设置状态为关闭
     for (auto& entry : _running_apps) {

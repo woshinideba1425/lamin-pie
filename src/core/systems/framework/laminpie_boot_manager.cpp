@@ -13,7 +13,7 @@ Laminpie_Boot_Manager::Laminpie_Boot_Manager(Laminpie_Boot_ManagerData_t &data)
     // Generate unique request ID for this boot session
     _current_request_id = std::to_string(std::chrono::system_clock::now().time_since_epoch().count() * std::random_device{}());
     
-    SYSTEM_CORE_LOG_INFO("BootManager: Initialized with request_id: {%s}", _current_request_id.c_str());
+    SYSTEM_CORE_LOG_INFO("BootManager: Initialized with request_id: %s", _current_request_id.c_str());
 }
 
 Laminpie_Boot_Manager::~Laminpie_Boot_Manager(void) {
@@ -21,7 +21,7 @@ Laminpie_Boot_Manager::~Laminpie_Boot_Manager(void) {
 }
 
 bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framework) {
-    SYSTEM_CORE_LOG_INFO("BootManager: Starting boot sequence with request_id: {%s}", _current_request_id.c_str());
+    SYSTEM_CORE_LOG_INFO("BootManager: Starting boot sequence with request_id: %s", _current_request_id.c_str());
     
     // Boot phases configuration
     struct BootPhase {
@@ -81,7 +81,7 @@ void Laminpie_Boot_Manager::NotifyPhase(Laminpie_Boot_Event_Type phase) {
     
     _boot_manager_data.core_event.dispatchEvent(event_data);
     
-    SYSTEM_CORE_LOG_DEBUG("BootManager: Phase notification sent - phase: {}, progress: {}%", 
+    SYSTEM_CORE_LOG_DEBUG("BootManager: Phase notification sent - phase: %d, progress: %d%%", 
                           static_cast<int>(phase), progress);
 }
 
