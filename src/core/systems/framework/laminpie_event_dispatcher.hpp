@@ -9,8 +9,10 @@
 #include <memory>
 #include <unordered_map>
 #include <queue>
-#include <thread>
+#include "laminpie_thread.h"
+#include "laminpie_thread_errors.h"
 #include <any>
+#include <atomic>
 
 #include "../laminpie_system_internal.h"
 #include "laminpie_system_event_type.hpp"
@@ -269,10 +271,87 @@ public:
             _condition.notify_one();
         }
         
-        SYSTEM_EVENT_LOG_DEBUG("Posted [%s] event to queue: %s", event->GetEventName().cstr(), event->GetTypeIndexString().cstr());
+        SYSTEM_EVENT_LOG_DEBUG("Posted [%s] event to queue: %s", event->GetEventName().c_str(), event->GetTypeIndexString().c_str());
     }
     
     
+    // 启动事件循环
+    /**
+     * @brief Start the event processing worker thread.
+     * @note Must be called before using postEvent() for asynchronous event delivery.
+     * @return true if thread started successfully, false otherwise
+     */
+    bool start() {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (_workerThread != nullptr) {
+            SYSTEM_EVENT_LOG_WARN("Event dispatcher worker thread already started");
+            return true;
+        }
+        
+        _running = true;
+        
+        // 使用laminpie_thread创建线程
+        auto result = laminpie_thread_create(
+            LAMINPIE_THREAD_PRIO_MID,  // 使用中等优先级
+            &LaminPie_EventDispatcher::threadEntryPoint,  // 线程入口点
+            4096,  // 4KB栈大小
+            this   // 传递this指针作为用户数据
+        );
+        
+        if (result.is_err()) {
+            SYSTEM_EVENT_LOG_ERROR("Failed to create event dispatcher worker thread: %s", 
+                                  result.error()->message().c_str());
+            _running = false;
+            return false;
+        }
+        
+        _workerThread = result.unwrap();
+        SYSTEM_EVENT_LOG_INFO("Event dispatcher worker thread started successfully");
+        return true;
+    }
+    
+    // 停止事件循环
+    /**
+     * @brief Stop the event processing worker thread.
+     * @note Blocks until the worker thread completes and all queued events are processed.
+     * @return true if thread stopped successfully, false otherwise
+     */
+    bool stop() {
+        laminpie_thread_t* thread_to_join = nullptr;
+        
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (_workerThread == nullptr) {
+                SYSTEM_EVENT_LOG_WARN("Event dispatcher worker thread not started");
+                return true;
+            }
+            
+            _running = false;
+            _condition.notify_all();
+            thread_to_join = _workerThread;
+            _workerThread = nullptr;  // 立即清空，避免重复停止
+        }
+        
+        // 等待线程结束
+        auto join_result = laminpie_thread_join(thread_to_join, 5000);  // 5秒超时
+        if (join_result.is_err()) {
+            SYSTEM_EVENT_LOG_ERROR("Failed to join event dispatcher worker thread: %s", 
+                                  join_result.error()->message().c_str());
+            return false;
+        }
+        
+        // 删除线程资源
+        auto delete_result = laminpie_thread_delete(thread_to_join);
+        if (delete_result.is_err()) {
+            SYSTEM_EVENT_LOG_ERROR("Failed to delete event dispatcher worker thread: %s", 
+                                  delete_result.error()->message().c_str());
+            return false;
+        }
+        
+        SYSTEM_EVENT_LOG_INFO("Event dispatcher worker thread stopped successfully");
+        return true;
+    }
+
     // 获取监听器数量（用于调试）
     /**
      * @brief Get the total count of registered listeners (for diagnostics).
@@ -288,8 +367,13 @@ public:
     }
     
 private:
-    LaminPie_EventDispatcher() : _nextListenerId(1) {}
-    ~LaminPie_EventDispatcher() {}
+    LaminPie_EventDispatcher() : _nextListenerId(1), _workerThread(nullptr) {}
+    ~LaminPie_EventDispatcher() {
+        // 确保在析构时停止线程
+        if (_workerThread != nullptr) {
+            stop();
+        }
+    }
 
     // 禁止拷贝和移动
     LaminPie_EventDispatcher(const LaminPie_EventDispatcher&) = delete;
@@ -308,6 +392,21 @@ private:
     std::condition_variable _condition;
     uint32_t _nextListenerId;
     
+    // 线程管理
+    laminpie_thread_t* _workerThread;
+    std::atomic<bool> _running{false};
+    
+    // 线程入口点函数（静态函数）
+    /**
+     * @brief Static thread entry point for laminpie_thread.
+     * @param user_data Pointer to LaminPie_EventDispatcher instance.
+     */
+    static void threadEntryPoint(void* user_data) {
+        LaminPie_EventDispatcher* dispatcher = static_cast<LaminPie_EventDispatcher*>(user_data);
+        if (dispatcher) {
+            dispatcher->eventHandler();
+        }
+    }
 
     // 事件循环处理函数
     /**
@@ -318,17 +417,16 @@ private:
     void eventHandler() {
         SYSTEM_EVENT_LOG_DEBUG("Event loop started");
         
-        
-        while (true ) {
+        while (_running.load()) {
             std::shared_ptr<IEvent> event;
             
             {
                 std::unique_lock<std::mutex> lock(_mutex);
                 _condition.wait(lock, [this] { 
-                    return !_eventQueue.empty(); 
+                    return !_eventQueue.empty() || !_running.load(); 
                 });
                 
-                if (_eventQueue.empty()) {
+                if (!_running.load()) {
                     break;
                 }
                 
@@ -354,26 +452,26 @@ private:
      * @note Matching is performed by comparing the stored enum type index.
      */
     void processQueuedEvent(const IEvent& event) {
-        std::shared_ptr<std::vector<IEventListener>> listeners_to_call;
+        std::vector<std::shared_ptr<std::vector<IEventListener>>> listeners_to_call;
         
         {
             std::lock_guard<std::mutex> lock(_mutex);
             // 遍历所有监听器，找到匹配的类型
             for (const auto& [key, listeners] : _listeners) {
                 if (key.first == event.GetTypeIndex()) {
-                    for (const auto& listener : *listeners) {
-                        listeners_to_call->push_back(listener);
-                    }
+                    listeners_to_call.push_back(listeners);
                 }
             }
         }
         
         // 调用所有匹配的监听器
-        for (const auto& listener : *listeners_to_call) {
-            try {
-                listener.callback(event);
-            } catch (const std::exception& e) {
-                SYSTEM_EVENT_LOG_ERROR("Exception in queued event callback: %s", e.what());
+        for (const auto& listener_list : listeners_to_call) {
+            for (const auto& listener : *listener_list) {
+                try {
+                    listener.callback(event);
+                } catch (const std::exception& e) {
+                    SYSTEM_EVENT_LOG_ERROR("Exception in queued event callback: %s", e.what());
+                }
             }
         }
     }

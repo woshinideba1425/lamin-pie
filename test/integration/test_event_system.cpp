@@ -1,26 +1,28 @@
 #include "test_common.h"
+#include "test_platform.h"
 #include "laminpie_event_dispatcher.hpp"
-#include "fixtures/mock_event_dispatcher.hpp"
+#include "interface/device_types.h"
+
 
 class EventSystemTest {
 private:
-    system::event::LaminPie_EventDispatcher& dispatcher;
-    std::vector<system::event::DeviceEvent> received_events;
+    laminpie::system::event::LaminPie_EventDispatcher& dispatcher;
+    std::vector<laminpie::system::event::DeviceEvent> received_events;
     
 public:
-    EventSystemTest() : dispatcher(system::event::LaminPie_EventDispatcher::getInstance()) {}
+    EventSystemTest() : dispatcher(laminpie::system::event::LaminPie_EventDispatcher::getInstance()) {}
     
     TestResult test_event_registration() {
         // 测试事件监听器注册
-        auto listener_id = dispatcher.addEventListener<system::event::DeviceEvent>(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            [this](const system::event::DeviceEvent& event) {
+        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            [this](const laminpie::system::event::DeviceEvent& event) {
                 received_events.push_back(event);
                 return true;
             }
         );
         
-        TEST_ASSERT(listener_id > 0);
+        TEST_ASSERT(dispatcher.getListenerCount() > 0);
         return TestResult::kPass;
     }
     
@@ -29,24 +31,27 @@ public:
         received_events.clear();
         
         // 注册监听器
-        auto listener_id = dispatcher.addEventListener<system::event::DeviceEvent>(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            [this](const system::event::DeviceEvent& event) {
+        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            [this](const laminpie::system::event::DeviceEvent& event) {
                 received_events.push_back(event);
                 return true;
             }
         );
         
         // 发送事件
-        auto event = system::event::DeviceEvent(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            "test_device"
+        auto device_id = std::make_shared<DeviceIdentifier>(
+            DeviceIdentifier::BusType::BUS_I2C, "test_device"
+        );
+        auto event = laminpie::system::event::DeviceEvent(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            device_id
         );
         
         dispatcher.dispatchEvent(event);
         
         TEST_ASSERT(received_events.size() == 1);
-        TEST_ASSERT(received_events[0].name == "test_device");
+        TEST_ASSERT(received_events[0].device->id == "test_device");
         
         return TestResult::kPass;
     }
@@ -59,18 +64,21 @@ public:
         dispatcher.start();
         
         // 注册监听器
-        auto listener_id = dispatcher.addEventListener<system::event::DeviceEvent>(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            [this](const system::event::DeviceEvent& event) {
+        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            [this](const laminpie::system::event::DeviceEvent& event) {
                 received_events.push_back(event);
                 return true;
             }
         );
         
         // 异步发送事件
-        auto event = system::event::DeviceEvent(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            "async_device"
+        auto device_id = std::make_shared<DeviceIdentifier>(
+            DeviceIdentifier::BusType::BUS_I2C, "async_device"
+        );
+        auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            device_id
         );
         
         dispatcher.postEvent(event);
@@ -79,7 +87,7 @@ public:
         PLATFORM_DELAY_MS(100);
         
         TEST_ASSERT(received_events.size() == 1);
-        TEST_ASSERT(received_events[0].name == "async_device");
+        TEST_ASSERT(received_events[0].device->id == "async_device");
         
         dispatcher.stop();
         return TestResult::kPass;

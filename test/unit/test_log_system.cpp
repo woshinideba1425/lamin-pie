@@ -1,5 +1,7 @@
 #include "test_common.h"
+#include "test_platform.h"
 #include "laminpie_log.hpp"
+#include "src/core/systems/laminpie_system_internal.h"
 
 class LogSystemTest {
 public:

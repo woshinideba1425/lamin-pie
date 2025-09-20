@@ -1,5 +1,27 @@
 #include "test_common.h"
+#include "test_platform.h"
 #include "laminpie_thread.h"
+#include <atomic>
+#include <vector>
+#include <mutex>
+#include <chrono>
+#include <thread>
+
+// 线程回调函数
+void thread_callback_1(void* data) {
+    std::atomic<bool>* flag = static_cast<std::atomic<bool>*>(data);
+    *flag = true;
+}
+
+void thread_callback_2(void* data) {
+    std::vector<int>* execution_order = static_cast<std::vector<int>*>(data);
+    execution_order->push_back(1);
+}
+
+void thread_callback_3(void* data) {
+    std::vector<int>* execution_order = static_cast<std::vector<int>*>(data);
+    execution_order->push_back(2);
+}
 
 class ThreadSystemTest {
 public:
@@ -8,11 +30,8 @@ public:
         std::atomic<bool> thread_executed{false};
         
         auto result = laminpie_thread_create(
-            LAMINPIE_THREAD_PRIO_NORMAL,
-            [](void* data) {
-                std::atomic<bool>* flag = static_cast<std::atomic<bool>*>(data);
-                *flag = true;
-            },
+            LAMINPIE_THREAD_PRIO_MID,
+            thread_callback_1,
             4096,
             &thread_executed
         );
@@ -25,7 +44,7 @@ public:
         }
         
         // 销毁线程
-        auto delete_result = laminpie_thread_delete(result.value());
+        auto delete_result = laminpie_thread_delete(result.unwrap());
         TEST_ASSERT(delete_result.is_ok());
         
         return TestResult::kPass;
@@ -34,28 +53,21 @@ public:
     TestResult test_thread_priority() {
         // 测试线程优先级
         std::vector<int> execution_order;
-        std::mutex order_mutex;
         
         // 创建低优先级线程
         auto low_prio_result = laminpie_thread_create(
             LAMINPIE_THREAD_PRIO_LOW,
-            [&execution_order, &order_mutex](void* data) {
-                std::lock_guard<std::mutex> lock(order_mutex);
-                execution_order.push_back(1);
-            },
+            thread_callback_2,
             4096,
-            nullptr
+            &execution_order
         );
         
         // 创建高优先级线程
         auto high_prio_result = laminpie_thread_create(
             LAMINPIE_THREAD_PRIO_HIGH,
-            [&execution_order, &order_mutex](void* data) {
-                std::lock_guard<std::mutex> lock(order_mutex);
-                execution_order.push_back(2);
-            },
+            thread_callback_3,
             4096,
-            nullptr
+            &execution_order
         );
         
         // 等待线程完成
@@ -67,8 +79,8 @@ public:
         TEST_ASSERT(execution_order[1] == 1); // 低优先级后执行
         
         // 清理
-        laminpie_thread_delete(low_prio_result.value());
-        laminpie_thread_delete(high_prio_result.value());
+        laminpie_thread_delete(low_prio_result.unwrap());
+        laminpie_thread_delete(high_prio_result.unwrap());
         
         return TestResult::kPass;
     }

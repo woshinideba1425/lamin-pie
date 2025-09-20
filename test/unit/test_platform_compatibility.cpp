@@ -1,25 +1,41 @@
 #include "test_common.h"
 #include "laminpie_thread.h"
+#include <chrono>
+#include <thread>
+
+// 平台宏定义
+#ifndef PLATFORM_DELAY_MS
+#define PLATFORM_DELAY_MS(ms) std::this_thread::sleep_for(std::chrono::milliseconds(ms))
+#endif
+
+#ifndef PLATFORM_NAME
+#define PLATFORM_NAME "Linux"
+#endif
+
+// 线程回调函数
+void platform_thread_callback(void* data) {
+    bool* flag = static_cast<bool*>(data);
+    *flag = true;
+    PLATFORM_DELAY_MS(100);
+}
 
 class PlatformCompatibilityTest {
 public:
     TestResult test_thread_creation_cross_platform() {
         // 测试跨平台线程创建
-        bool thread_created = false;
         bool thread_executed = false;
         
         auto result = laminpie_thread_create(
-            LAMINPIE_THREAD_PRIO_NORMAL,
-            [](void* data) {
-                bool* flag = static_cast<bool*>(data);
-                *flag = true;
-                PLATFORM_DELAY_MS(100);
-            },
+            LAMINPIE_THREAD_PRIO_MID,
+            platform_thread_callback,
             4096,
             &thread_executed
         );
         
         TEST_ASSERT(result.is_ok());
+        
+        // 等待线程执行
+        PLATFORM_DELAY_MS(200);
         TEST_ASSERT(thread_executed);
         
         return TestResult::kPass;

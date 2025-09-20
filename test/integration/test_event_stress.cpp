@@ -1,20 +1,22 @@
 #include "test_common.h"
+#include "test_platform.h"
 #include "laminpie_event_dispatcher.hpp"
+#include "interface/device_types.h"
 
 class EventStressTest {
 public:
     TestResult test_high_frequency_events() {
         // 测试高频事件处理
-        auto& dispatcher = system::event::LaminPie_EventDispatcher::getInstance();
+        auto& dispatcher = laminpie::system::event::LaminPie_EventDispatcher::getInstance();
         dispatcher.start();
         
         std::atomic<int> event_count{0};
         const int total_events = 10000;
         
         // 注册监听器
-        auto listener_id = dispatcher.addEventListener<system::event::DeviceEvent>(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            [&event_count](const system::event::DeviceEvent& event) {
+        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            [&event_count](const laminpie::system::event::DeviceEvent& event) {
                 event_count++;
                 return true;
             }
@@ -23,9 +25,13 @@ public:
         // 发送大量事件
         auto start_time = PLATFORM_GET_TICK_COUNT();
         for (int i = 0; i < total_events; i++) {
-            auto event = system::event::DeviceEvent(
-                system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            auto device_id = std::make_shared<DeviceIdentifier>(
+                DeviceIdentifier::BusType::BUS_I2C, 
                 "stress_device_" + std::to_string(i)
+            );
+            auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+                laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+                device_id
             );
             dispatcher.postEvent(event);
         }
@@ -47,7 +53,7 @@ public:
     
     TestResult test_concurrent_event_handling() {
         // 测试并发事件处理
-        auto& dispatcher = system::event::LaminPie_EventDispatcher::getInstance();
+        auto& dispatcher = laminpie::system::event::LaminPie_EventDispatcher::getInstance();
         dispatcher.start();
         
         std::atomic<int> event_count{0};
@@ -55,9 +61,9 @@ public:
         const int events_per_thread = 1000;
         
         // 注册监听器
-        auto listener_id = dispatcher.addEventListener<system::event::DeviceEvent>(
-            system::event::Laminpie_Device_Event_Type::kDeviceAdd,
-            [&event_count](const system::event::DeviceEvent& event) {
+        dispatcher.addEventListener<laminpie::system::event::DeviceEvent>(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            [&event_count](const laminpie::system::event::DeviceEvent& event) {
                 event_count++;
                 return true;
             }
@@ -66,11 +72,15 @@ public:
         // 创建多个线程发送事件
         std::vector<std::thread> threads;
         for (int t = 0; t < thread_count; t++) {
-            threads.emplace_back([&dispatcher, t, events_per_thread]() {
+            threads.emplace_back([&dispatcher, t]() {
                 for (int i = 0; i < events_per_thread; i++) {
-                    auto event = system::event::DeviceEvent(
-                        system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+                    auto device_id = std::make_shared<DeviceIdentifier>(
+                        DeviceIdentifier::BusType::BUS_I2C, 
                         "concurrent_device_" + std::to_string(t) + "_" + std::to_string(i)
+                    );
+                    auto event = std::make_shared<laminpie::system::event::DeviceEvent>(
+                        laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+                        device_id
                     );
                     dispatcher.postEvent(event);
                 }

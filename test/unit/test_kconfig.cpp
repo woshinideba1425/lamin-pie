@@ -62,5 +62,6 @@ TestResult test_kconfig_flags(void) {
     #endif
     
     LP_LOG_INFO("TEST_KCONFIG", "Kconfig flags test completed successfully");
+    (void)TAG; // 避免未使用变量警告
     return TestResult::kPass;
 }

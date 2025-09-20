@@ -3,6 +3,7 @@
 
 #include "test_platform.h"
 #include <assert.h>
+#include "laminpie_log.hpp"
 
 // 测试配置
 #define TEST_MAX_ITERATIONS 1000

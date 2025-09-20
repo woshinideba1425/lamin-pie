@@ -4,6 +4,7 @@
 #include "test_common.h"
 #include <vector>
 #include <string>
+#include "laminpie_log.hpp"
 
 class TestUtils {
 public:
