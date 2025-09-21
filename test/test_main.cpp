@@ -48,14 +48,14 @@ bool TestEventStress() {
 #endif
 
 #ifdef CONFIG_LAMINPIE_TEST_ENABLE_APP_SCHEDULER
-#include "integration/test_app_scheduler.cpp"
+#include "integration/test_app_manager_integration.cpp"
+
 class AppSchedulerTest;
+class AppManagerIntegrationTest;
 
 bool TestAppScheduler() {
-    AppSchedulerTest test;
-    return test.test_app_startup() == TestResult::kPass &&
-           test.test_app_lifecycle() == TestResult::kPass &&
-           test.test_multiple_apps() == TestResult::kPass;
+    AppManagerIntegrationTest test2;
+    return test2.RunAllTests() == TestResult::kPass;
 }
 
 #endif

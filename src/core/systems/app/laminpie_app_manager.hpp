@@ -24,9 +24,9 @@ typedef struct {
 
 class Laminpie_App_Manager : public Laminpie_App_Register {
 public:
-    Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data);
+    Laminpie_App_Manager(framework::Laminpie_Core_Framework &framework, Laminpie_App_ManagerData_t &data);
     
-    ~Laminpie_App_Manager();
+    virtual ~Laminpie_App_Manager();
 
     bool StartApp(app::Laminpie_App_Base* app);
     bool MoveAppToBackground(Laminpie_App_Base* app);

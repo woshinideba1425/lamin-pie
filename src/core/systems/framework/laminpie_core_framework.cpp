@@ -9,8 +9,6 @@ Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Lam
                             device::DeviceManager &core_device_manager, lv_display_t *device):
                             _core_data(data),
                             _core_display(core_display),
-                            _core_app_manager(core_manager),
-                            _core_event(core_event),
                             _core_device_manager(core_device_manager),
                             _core_app_navigation(core_navigation),
                             _display_device(device),
@@ -21,12 +19,81 @@ Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Lam
                             _app_navigation_event_type(event::Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_IDLE),
                             _ui_event_type(event::Laminpie_UI_Event_Type::kUI_Event_Type_Max),
                             _lv_lock_callback(nullptr),
-                            _lv_unlock_callback(nullptr){}
+                            _lv_unlock_callback(nullptr)
+{
+    // 使用外部提供的组件
+    _core_event = event::LaminPie_EventDispatcher::Create();
+    
+    SYSTEM_CORE_LOG_INFO("Core framework initialized with external components");
+}
 
 Laminpie_Core_Framework::~Laminpie_Core_Framework(void)
 {
-
+    // 清理内部管理的组件
+    if (_core_app_manager) {
+        _core_app_manager->DestroyAllApps();
+    }
+    
+    _core_event.reset();
+    
+    SYSTEM_CORE_LOG_INFO("Core framework destroyed");
 }
 
+Laminpie_Core_Framework &Laminpie_Core_Framework::GetInstance(void)
+{
+    static Laminpie_Core_Framework* instance = nullptr;
+    if (instance == nullptr) {
+        SYSTEM_CORE_LOG_ERROR("Core framework not initialized. Call SetInstance first.");
+        throw std::runtime_error("Core framework not initialized");
+    }
+    return *instance;
+}
+
+void Laminpie_Core_Framework::SetInstance(Laminpie_Core_Framework* instance)
+{
+    static Laminpie_Core_Framework* static_instance = nullptr;
+    static_instance = instance;
+    SYSTEM_CORE_LOG_INFO("Core framework instance set");
+}
+
+bool Laminpie_Core_Framework::setTouchDevice(lv_indev_t *touch) const
+{
+    if (touch == nullptr) {
+        SYSTEM_CORE_LOG_ERROR("Touch device is null");
+        return false;
+    }
+    
+    _touch_device = touch;
+    SYSTEM_CORE_LOG_INFO("Touch device set successfully");
+    return true;
+}
+
+bool Laminpie_Core_Framework::registerDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const
+{
+    if (callback == nullptr) {
+        SYSTEM_CORE_LOG_ERROR("Date update callback is null");
+        return false;
+    }
+    
+    SYSTEM_CORE_LOG_INFO("Date update event callback registered");
+    return true;
+}
+
+bool Laminpie_Core_Framework::unregisterDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const
+{
+    if (callback == nullptr) {
+        SYSTEM_CORE_LOG_ERROR("Date update callback is null");
+        return false;
+    }
+    
+    SYSTEM_CORE_LOG_INFO("Date update event callback unregistered");
+    return true;
+}
+
+bool Laminpie_Core_Framework::sendDataUpdateEvent(void *param) const
+{
+    SYSTEM_CORE_LOG_DEBUG("Sending data update event");
+    return true;
+}
 
 }

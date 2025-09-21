@@ -47,7 +47,7 @@ class Laminpie_CoreDisplay {
     friend class app::Laminpie_App_Manager;
     friend class app::Laminpie_App_Register;
     friend class Laminpie_Core_Framework;
-
+public:
     Laminpie_CoreDisplay(Laminpie_Core_Framework &core, const Laminpie_CoreDisplayData &data);
     ~Laminpie_CoreDisplay();
 

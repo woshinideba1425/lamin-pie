@@ -5,9 +5,11 @@
 #include "laminpie_log.hpp"
 #include "laminpie_system_internal.h"
 
+using namespace laminpie::utils;
+
 namespace laminpie::system::app {
-    Laminpie_App_Register::Laminpie_App_Register(framework::Laminpie_Core_Framework *framework) 
-    : _framework(framework), _navigation(&_framework->GetAppNavigation()) {
+    Laminpie_App_Register::Laminpie_App_Register(framework::Laminpie_Core_Framework &framework) 
+    : _framework(framework), _navigation(&_framework.GetAppNavigation()) {
         SYSTEM_APP_LOG_DEBUG("App register initialized");
     }
 
@@ -16,14 +18,14 @@ namespace laminpie::system::app {
         bool home_process_app_installed = false;
         bool ret = true;
         lv_area_t app_visual_area = {};
-        Laminpie_CoreHome &home = _framework->_core_display;
+        Laminpie_CoreHome &home = _framework._core_display;
         CheckNullAndReturn(app, -1, "Invalid app");
 
         for (auto it = _id_installed_app_map.begin(); it != _id_installed_app_map.end(); it++ ){
             CheckFalseReturn(it->second != app, -1, "Already installed");
         }
         CheckFalseReturn(app->OnSetup(), false, "App setup failed");
-        app_installed = app->ProcessInstall(_framework, _app_free_id);
+        app_installed = app->ProcessInstall(&_framework, _app_free_id);
         ret = _id_installed_app_map.insert(std::pair <int, Laminpie_App_Base *>(app->_id, app)).second;
         ret = home.GetAppVisualArea(app, app_visual_area);
         ret = app->SetVisualArea(app_visual_area);
@@ -62,7 +64,7 @@ namespace laminpie::system::app {
     {
         bool ret = true;
         int app_id = -1;
-        Laminpie_CoreHome &home = _framework->_core_display;
+        Laminpie_CoreHome &home = _framework._core_display;
 
         CheckNullAndReturn(app,false,"Invalid app");
         app_id = app->_id;

@@ -233,7 +233,7 @@ if(CONFIG_LAMINPIE_ENABLE_TEST)
     endif()
     
     if(CONFIG_LAMINPIE_TEST_ENABLE_APP_SCHEDULER)
-        list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_app_scheduler.cpp)
+        list(APPEND SRCS_CPP ${TEST_INTEGRATION_SRC_DIR}/test_app_manager_integration.cpp)
     endif()
     
     if(CONFIG_LAMINPIE_TEST_ENABLE_DEVICE_SYSTEM)

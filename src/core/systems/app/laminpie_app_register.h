@@ -21,13 +21,13 @@ namespace laminpie::system::app {
         protected:
             std::unordered_map <int, std::shared_ptr<Laminpie_AppSnapshot_t>> _id_app_snapshot_map;
 
-            framework::Laminpie_Core_Framework *_framework;
+            framework::Laminpie_Core_Framework &_framework;
             Laminpie_App_Navigation* _navigation;
 
         public:
             friend class Laminpie_Core_Framework;
 
-            Laminpie_App_Register(framework::Laminpie_Core_Framework *framework);
+            Laminpie_App_Register(framework::Laminpie_Core_Framework &framework);
             ~Laminpie_App_Register() = default;
 
             int Install(Laminpie_App_Base* app, void* userData = nullptr);

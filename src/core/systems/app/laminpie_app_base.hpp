@@ -13,7 +13,6 @@
 namespace laminpie::system::app {
 using namespace laminpie::gui;
 using namespace laminpie::system::event;
-using namespace laminpie::utils;
 
 typedef struct {
     std::string name;
@@ -47,8 +46,6 @@ public:
     friend class Laminpie_App_Manager;
     
     Laminpie_App_Base(const Laminpie_App_Base_Data_t &data);
-
-    Laminpie_App_Base(const char *name, const void *launcher_icon, bool use_default_screen);
 
     virtual ~Laminpie_App_Base() = default;
 

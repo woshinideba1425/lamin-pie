@@ -6,7 +6,9 @@
 #include "style/laminpie_gui_style.hpp"
 #include "laminpie_core_display.hpp"
 #include "laminpie_device_manager.h"
+#include "laminpie_app_manager.hpp"
 #include <sys/_stdint.h>
+#include <memory>
 
 namespace laminpie::system::framework {
 
@@ -36,11 +38,12 @@ public:
     /* Core */
     // bool checkCoreInitialized(void) const               { return (_event_obj.get() != nullptr); }
     static Laminpie_Core_Framework &GetInstance(void);
+    static void SetInstance(Laminpie_Core_Framework* instance);
     const Laminpie_Core_Data_t &GetCoreData(void) const { return _core_data; }
     lv_display_t *GetDisplayDevice(void) const {return _display_device;}
-    event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return _core_event;}
+    event::LaminPie_EventDispatcher &GetEventDispatcher(void) {return *_core_event;}
     device::DeviceManager &GetDeviceManager(void) {return _core_device_manager;}
-    app::Laminpie_App_Manager &GetAppManager(void){return _core_app_manager;}
+    app::Laminpie_App_Manager &GetAppManager(void){return *_core_app_manager;}
     app::Laminpie_App_Navigation &GetAppNavigation(void){return _core_app_navigation;}
     
     /* Device */
@@ -55,12 +58,12 @@ public:
     template<typename EventType, typename CallbackType>
     uint32_t RegisterEventListener(typename EventType::EnumTypeAlias event_type, 
                                    CallbackType&& callback) {
-        return _core_event.addEventListener<EventType>(event_type, std::forward<CallbackType>(callback));
+        return _core_event->addEventListener<EventType>(event_type, std::forward<CallbackType>(callback));
     }
 
     template<typename EventType, typename CallbackType>
     uint32_t RegisterEventListenerForAll(CallbackType&& callback) {
-        return _core_event.addEventListenerForAll<EventType>(std::forward<CallbackType>(callback));
+        return _core_event->addEventListenerForAll<EventType>(std::forward<CallbackType>(callback));
     }
 
     // Data Update
@@ -72,10 +75,12 @@ public:
 protected:
     Laminpie_Core_Data_t _core_data;
     Laminpie_CoreHome                &_core_display;
-    app::Laminpie_App_Manager        &_core_app_manager;
-    event::LaminPie_EventDispatcher  &_core_event;
     device::DeviceManager            &_core_device_manager;
     app::Laminpie_App_Navigation    &_core_app_navigation;
+    
+    // 内部管理的组件
+    std::unique_ptr<app::Laminpie_App_Manager> _core_app_manager;
+    std::unique_ptr<event::LaminPie_EventDispatcher> _core_event;
 
     lv_display_t       *_display_device;
     mutable lv_indev_t *_touch_device;

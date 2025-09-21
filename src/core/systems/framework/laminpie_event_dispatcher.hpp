@@ -368,7 +368,7 @@ public:
         return count;
     }
     
-private:
+public:
     LaminPie_EventDispatcher() : _nextListenerId(1), _workerThread(nullptr) {}
     ~LaminPie_EventDispatcher() {
         // 确保在析构时停止线程
@@ -376,6 +376,13 @@ private:
             stop();
         }
     }
+
+    // 静态工厂方法
+    static std::unique_ptr<LaminPie_EventDispatcher> Create() {
+        return std::make_unique<LaminPie_EventDispatcher>();
+    }
+
+private:
 
     // 禁止拷贝和移动
     LaminPie_EventDispatcher(const LaminPie_EventDispatcher&) = delete;

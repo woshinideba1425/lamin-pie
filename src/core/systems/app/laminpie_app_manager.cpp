@@ -4,11 +4,14 @@
 #include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
 
+using namespace laminpie::utils;
+
 namespace laminpie::system::app {
-Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework *framework, Laminpie_App_ManagerData_t &data)
+Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework &framework, Laminpie_App_ManagerData_t &data)
 : Laminpie_App_Register(framework), 
-  _event_dispatcher(framework->GetEventDispatcher()), 
-  _app_manager_data(data)
+  _event_dispatcher(framework.GetEventDispatcher()), 
+  _app_manager_data(data),
+  _foreground_app(nullptr)
 {
     SYSTEM_APP_LOG_DEBUG("App manager initialized");
 
@@ -433,6 +436,26 @@ bool Laminpie_App_Manager::ProcessAppPause(Laminpie_App_Base *app)
 bool Laminpie_App_Manager::ProcessAppClose(Laminpie_App_Base *app){
     SYSTEM_APP_LOG_INFO("Processing app close: %s", app->GetName().c_str());
 
+    return true;
+}
+
+void Laminpie_App_Manager::ResetActiveApp()
+{
+    SYSTEM_APP_LOG_INFO("Resetting active app");
+    _foreground_app = nullptr;
+}
+
+bool Laminpie_App_Manager::SaveAppSnapshot(Laminpie_App_Base *app)
+{
+    SYSTEM_APP_LOG_INFO("Saving app snapshot: %s", app->GetName().c_str());
+    // TODO: 实现应用快照保存逻辑
+    return true;
+}
+
+bool Laminpie_App_Manager::ReleaseAppSnapshot(Laminpie_App_Base *app)
+{
+    SYSTEM_APP_LOG_INFO("Releasing app snapshot: %s", app->GetName().c_str());
+    // TODO: 实现应用快照释放逻辑
     return true;
 }
 }

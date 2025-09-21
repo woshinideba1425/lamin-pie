@@ -7,6 +7,8 @@
 #define RESOURCE_LOOP_COUNT_MAX     (1000)
 
 namespace laminpie::system::app {
+    
+using namespace utils;
 
 Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
     _event_dispatcher(LaminPie_EventDispatcher::getInstance()),
@@ -26,10 +28,11 @@ Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
     _resource_head_anim(nullptr)
 {
 }
-// bool Laminpie_App_Base::CheckInitialized(void) const{
-//     return (_id >= Laminpie_App_ID_Min) && (_framework != nullptr) &&
-//            (_framework->getAppManager().getInstalledApp(_id) == this);
-// }
+
+bool Laminpie_App_Base::CheckInitialized(void) const{
+    return (_id >= Laminpie_App_ID_Min) && (_framework != nullptr) &&
+           (_framework->GetAppManager().GetInstalledApp(_id) == this);
+}
 
 bool Laminpie_App_Base::notifyCoreClosed(void) const{
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
