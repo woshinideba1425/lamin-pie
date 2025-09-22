@@ -90,10 +90,10 @@ public:
             DeviceManager::getInstance(),
             nullptr  // 模拟显示设备
         ),
-        _test_core_home(*this, _core_home_data),
         _app_manager(*this, _app_manager_data),
         _app_navigation(),
-        _event_dispatcher() {
+        _event_dispatcher(),
+        _test_core_home(*this, _core_home_data) {
         SYSTEM_APP_LOG_INFO("Starting AppManager integration test");
         SetupTestEnvironment();
     }
@@ -175,6 +175,8 @@ private:
         MinimalTestApp1Data.name = "TestApp1";
         auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
         
+        SYSTEM_APP_LOG_INFO("app_manager: %p", &_app_manager);
+        _core_app_manager.reset(&_app_manager);
         bool register_result = _app_manager.Install(test_app.get());
         TEST_ASSERT(register_result);
         
@@ -293,10 +295,11 @@ private:
     Laminpie_App_ManagerData_t _app_manager_data;
     
     // 真实组件实例 - 必须在基类构造函数之前声明
-    TestCoreHome _test_core_home;
+    // 注意：声明顺序决定了初始化顺序，必须与基类构造函数参数顺序一致
     Laminpie_App_Manager _app_manager;
     Laminpie_App_Navigation _app_navigation;
     LaminPie_EventDispatcher _event_dispatcher;
+    TestCoreHome _test_core_home;
 };
 
 // 测试用例定义

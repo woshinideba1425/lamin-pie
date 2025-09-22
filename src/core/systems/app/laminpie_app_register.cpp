@@ -27,9 +27,21 @@ namespace laminpie::system::app {
         CheckFalseReturn(app->OnSetup(), false, "App setup failed");
         app_installed = app->ProcessInstall(&_framework, _app_free_id);
         ret = _id_installed_app_map.insert(std::pair <int, Laminpie_App_Base *>(app->_id, app)).second;
-        ret = home.GetAppVisualArea(app, app_visual_area);
-        ret = app->SetVisualArea(app_visual_area);
-        ret = app->CalibrateVisualArea();
+        
+        // 插入哈希表后打印app名字
+        if (ret) {
+            auto it = _id_installed_app_map.find(app->_id);
+            if (it != _id_installed_app_map.end()) {
+                SYSTEM_APP_LOG_INFO("App inserted into hash table: %s (ID: %d)", app->GetName().c_str(), app->_id);
+            }
+        }
+        
+        // 确保 app 完全安装后再设置视觉区域
+        if (ret && app_installed) {
+            ret = home.GetAppVisualArea(app, app_visual_area);
+            ret = app->SetVisualArea(app_visual_area);
+            ret = app->CalibrateVisualArea();
+        }
 
         ret = home.ProcessAppInstall(app);
         if (!ret){
@@ -111,6 +123,8 @@ namespace laminpie::system::app {
 
     Laminpie_App_Base *Laminpie_App_Register::GetInstalledApp(int id)
     {
+        SYSTEM_APP_LOG_DEBUG("app_register: %p", this);
+        vTaskDelay(pdMS_TO_TICKS(1000));
         auto it = _id_installed_app_map.find(id);
         if(it != _id_installed_app_map.end()){
             return it->second;

@@ -30,8 +30,23 @@ Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
 }
 
 bool Laminpie_App_Base::CheckInitialized(void) const{
-    return (_id >= Laminpie_App_ID_Min) && (_framework != nullptr) &&
-           (_framework->GetAppManager().GetInstalledApp(_id) == this);
+    // 分步检查，确保安全
+    if (_id < Laminpie_App_ID_Min) {
+        SYSTEM_APP_LOG_DEBUG("App(%d) CheckInitialized: false - invalid ID", _id);
+        return false;
+    }
+    
+    if (_framework == nullptr) {
+        SYSTEM_APP_LOG_DEBUG("App(%s: %d) CheckInitialized: false - framework is null", GetName().c_str(), _id);
+        return false;
+    }
+    
+    // 只有在前面检查都通过时才访问framework
+    bool ret = (_framework->GetAppManager().GetInstalledApp(_id) == this);
+    SYSTEM_APP_LOG_DEBUG("App(%s: %d) CheckInitialized: %d, _id: %d, _framework: %p, GetInstalledApp: %p", 
+        GetName().c_str(), _id, ret, _id, _framework, _framework->GetAppManager().GetInstalledApp(_id));
+    
+    return ret;
 }
 
 bool Laminpie_App_Base::notifyCoreClosed(void) const{
@@ -51,7 +66,7 @@ void Laminpie_App_Base::SetLauncherIconImage(const StyleImage &icon_image){
 }
 
 bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *framework, int id){
-    CheckFalseReturn(CheckInitialized(), false, "Already initialized");
+    CheckFalseReturn(!CheckInitialized(), false, "App(%s: %d) Already initialized", _core_init_data.name.c_str(), id);
     CheckNullAndReturn(framework, false, "Framework is invalid");
     CheckNullAndReturn(_core_init_data.name, false, "App name is invalid");
 

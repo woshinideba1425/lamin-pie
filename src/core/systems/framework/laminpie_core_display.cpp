@@ -128,7 +128,7 @@ bool Laminpie_CoreDisplay::BeginCore(void)
     lv_display_t *display = _core.GetDisplayDevice();
 
     SYSTEM_CORE_LOG_DEBUG("Begin(0x%p)", this);
-    utils::CheckFalseReturn(!CheckCoreInitialized(), false, "Already initialized");
+    utils::CheckFalseReturn(!CheckCoreInitialized(), false, "Core display Already initialized");
     utils::CheckFalseReturn(display == nullptr, false, "Invalid display device");
 
     SaveLvScreens();
