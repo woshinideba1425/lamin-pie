@@ -4,11 +4,9 @@
 #include <map>
 #include <stdint.h>
 #include <string>
-#include "lvgl.h"
-#include "lvgl/laminpie_lv_helper.hpp"
+#include "lvgl/laminpie_lv.hpp"
 #include "../laminpie_system_internal.h"
 #include "laminpie_event_dispatcher.hpp"
-#include "laminpie_app_navigation.hpp"
 
 namespace laminpie::system::app {
 using namespace laminpie::gui;

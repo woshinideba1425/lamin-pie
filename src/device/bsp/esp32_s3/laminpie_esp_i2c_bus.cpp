@@ -5,7 +5,7 @@
 #include <sys/_stdint.h>
 #include <inttypes.h>
 #include "driver/i2c.h"
-namespace laminpie::device::bsp::esp32_s3 {
+namespace laminpie::device::bsp::esp {
 EspI2cBus::EspI2cBus(i2c_port_num_t busNumber, gpio_num_t sda_pin, gpio_num_t scl_pin, uint32_t frequency)
     : I2c_bus(busNumber, sda_pin, scl_pin, frequency),
     busNumber_(busNumber),

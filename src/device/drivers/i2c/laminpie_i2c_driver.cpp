@@ -1,6 +1,7 @@
 #include "laminpie_i2c_driver.h"
 #include <vector>
 
+namespace laminpie::device::drivers{
 I2cDriver::I2cDriver(std::shared_ptr<Bus> bus) : _bus(bus) {
     // 只进行一次RTTI操作
     _i2c_bus = std::static_pointer_cast<I2c_bus>(bus);
@@ -232,4 +233,5 @@ bool I2cDriver::modifyRegisterBits(uint16_t deviceAddr, uint8_t regAddr, uint8_t
     
     // 写回修改后的值
     return writeRegister(deviceAddr, regAddr, currentValue);
+}
 }

@@ -3,6 +3,12 @@
 #include "../interface/driver.h"
 #include "laminpie_i2c_bus.h"
 
+namespace laminpie::device::drivers{
+
+// dependencies of laminpie module
+using I2c_bus = device::buses::I2c_bus;
+using I2CBusCommand = device::buses::I2CBusCommand;
+
 class I2cDriver : public Driver {
 public:
     // 构造函数中进行一次性类型检查和转换
@@ -106,3 +112,4 @@ private:
     std::shared_ptr<I2c_bus> _i2c_bus;    // 缓存转换后的I2c_bus指针
     std::vector<uint16_t> _supportedDeviceAddress;
 };
+}

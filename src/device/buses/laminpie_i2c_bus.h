@@ -12,6 +12,7 @@
 /**
  * @brief I2C总线命令结构体，描述一个完整的I2C传输
  */
+namespace laminpie::device::buses{
 struct I2CBusCommand {
     uint16_t deviceAddress;  ///< 7位设备地址
     
@@ -258,3 +259,4 @@ private:
     std::mutex rx_mutex_;       ///< 接收缓冲区互斥锁
     std::mutex access_mutex_;   ///< 总线访问互斥锁
 };
+}

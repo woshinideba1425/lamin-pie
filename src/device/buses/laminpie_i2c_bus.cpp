@@ -3,7 +3,7 @@
 #include "interface/device_types.h"
 #include <iostream>
 #include <sys/_stdint.h>
-
+namespace laminpie::device::buses{
 I2c_bus::I2c_bus(int busNumber, int sda_pin, int scl_pin, uint32_t frequency)
                 : busNumber_(busNumber), sda_pin_(sda_pin), scl_pin_(scl_pin), frequency_(frequency){
 }
@@ -162,3 +162,4 @@ BufferView I2c_bus::addToWriteBuffer(uint16_t deviceAddr, const uint8_t* data, s
     return BufferView(guard.ptr(), length);
 }
 
+}

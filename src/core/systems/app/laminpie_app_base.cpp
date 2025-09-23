@@ -6,9 +6,9 @@
 #include "style/laminpie_gui_style.hpp"
 #define RESOURCE_LOOP_COUNT_MAX     (1000)
 
+using namespace laminpie::utils;
 namespace laminpie::system::app {
     
-using namespace utils;
 
 Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
     _event_dispatcher(LaminPie_EventDispatcher::getInstance()),

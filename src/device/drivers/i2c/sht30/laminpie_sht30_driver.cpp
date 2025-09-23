@@ -5,7 +5,7 @@
 #include <sys/_stdint.h>
 
 static const char* TAG = "SHT30";
-
+namespace laminpie::device::drivers::i2c{
 // CRC8校验多项式: x^8 + x^5 + x^4 + 1 = 0x31
 #define CRC8_POLYNOMIAL 0x31
 
@@ -198,4 +198,5 @@ uint8_t Sht30Driver::calculateCRC8(const uint8_t* data, size_t len) const {
     }
     
     return crc;
+}
 }

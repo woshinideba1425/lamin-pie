@@ -6,8 +6,9 @@
 #include "laminpie_core_framework.hpp"
 #include "laminpie_system_internal.h"
 
-namespace laminpie::system::framework {
+namespace laminpie::system::framework::manager {
 using namespace event;
+
 class Laminpie_Core_Manager {
 public:
     explicit Laminpie_Core_Manager(Laminpie_Core_Framework& core_framework);

@@ -123,8 +123,8 @@ namespace laminpie::system::app {
 
     Laminpie_App_Base *Laminpie_App_Register::GetInstalledApp(int id)
     {
-        SYSTEM_APP_LOG_DEBUG("app_register: %p", this);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        LP_LOG_TRACE_GUARD_WITH_THIS("laminpie.app");
+        vTaskDelay(pdMS_TO_TICKS(100));
         auto it = _id_installed_app_map.find(id);
         if(it != _id_installed_app_map.end()){
             return it->second;

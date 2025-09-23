@@ -2,7 +2,7 @@
 #include "laminpie_system_event_type.hpp"
 #include "laminpie_system_internal.h"
 
-namespace laminpie::system::framework {
+namespace laminpie::system::framework::manager {
 
 Laminpie_Core_Manager::Laminpie_Core_Manager(Laminpie_Core_Framework& core_framework)
     : _core_framework(core_framework)

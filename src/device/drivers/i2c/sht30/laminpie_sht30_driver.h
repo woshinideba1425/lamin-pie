@@ -2,6 +2,7 @@
 
 #include "laminpie_i2c_driver.h"
 
+namespace laminpie::device::drivers::i2c{
 // SHT30相关常量定义
 #define SHT30_ADDR 0x44
 #define TEMPERATURE_CALIBRATION 175
@@ -48,3 +49,4 @@ private:
     // CRC校验方法
     uint8_t calculateCRC8(const uint8_t* data, size_t len) const;
 };
+}

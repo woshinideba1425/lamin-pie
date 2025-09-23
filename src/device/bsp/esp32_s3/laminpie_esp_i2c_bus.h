@@ -7,10 +7,12 @@
 #include <map>
 #include "laminpie_event_dispatcher.hpp"
 
-namespace laminpie::device::bsp::esp32_s3 {
+namespace laminpie::device::bsp::esp {
 using DeviceEventType = system::event::Laminpie_Device_Event_Type;
 using EventDispatcher = system::event::LaminPie_EventDispatcher;
 using Event = system::event::Event<DeviceEventType>;
+using I2c_bus = device::buses::I2c_bus;
+using I2CBusCommand = device::buses::I2CBusCommand;
 
 struct I2cDevDeleter {
     void operator()(i2c_master_dev_handle_t handle) const {
