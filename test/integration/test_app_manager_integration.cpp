@@ -29,7 +29,13 @@ Laminpie_App_Base_Data_t MinimalTestApp1Data = {
     .flags = {.enable_default_screen = true, .enable_recycle_resource = true, .enable_resize_visual_area = true, .enable_running_bg = true},
     .app_proity = 1,
  };
-
+ Laminpie_App_Base_Data_t MinimalTestApp5Data = {
+    .name = "MinimalTestApp5",
+    .launcher_icon = {.resource = nullptr, .recolor = {.color = 0xFFFFFF, .opacity = 255}, .flags = {.enable_recolor = false}},
+    .screen_size = {.width = 100, .height = 100},
+    .flags = {.enable_default_screen = true, .enable_recycle_resource = true, .enable_resize_visual_area = true, .enable_running_bg = false},
+    .app_proity = 4,
+ };
 /**
  * @brief 测试用的核心显示类
  * 
@@ -72,12 +78,71 @@ public:
     bool ProcessAppCreate(Laminpie_App_Base *app) override { return true; }
 };
 
-
+class MockLvDisplay {
+    public:
+        MockLvDisplay(int32_t hor_res = 100, int32_t ver_res = 100) 
+            : _hor_res(hor_res), _ver_res(ver_res) {
+            InitializeMockDisplay();
+        }
+        
+        ~MockLvDisplay() {
+            if (_display) {
+                lv_display_delete(_display);
+            }
+        }
+        
+        lv_display_t* GetDisplay() const { return _display; }
+        
+    private:
+        void InitializeMockDisplay() {
+            // 初始化 LVGL（如果尚未初始化）
+            static bool lvgl_initialized = false;
+            if (!lvgl_initialized) {
+                lv_init();
+                lvgl_initialized = true;
+            }
+            
+            // 创建测试帧缓冲区
+            lv_color32_t test_fb[(_hor_res + LV_DRAW_BUF_STRIDE_ALIGN - 1) * _ver_res + LV_DRAW_BUF_ALIGN];
+            
+            // 创建显示设备
+            _display = lv_display_create(_hor_res, _ver_res);
+            if (!_display) {
+                SYSTEM_CORE_LOG_ERROR("Failed to create mock display");
+                return;
+            }
+            
+            // 设置缓冲区
+            lv_display_set_buffers(_display, 
+                                  lv_draw_buf_align(test_fb, LV_COLOR_FORMAT_ARGB8888), 
+                                  NULL, 
+                                  _hor_res * _ver_res * 4, 
+                                  LV_DISPLAY_RENDER_MODE_DIRECT);
+            
+            // 设置模拟刷新回调
+            lv_display_set_flush_cb(_display, MockFlushCallback);
+            
+            SYSTEM_CORE_LOG_INFO("Mock display created: %lux%lu", _hor_res, _ver_res);
+        }
+        
+        static void MockFlushCallback(lv_display_t * disp, const lv_area_t * area, uint8_t * color_p) {
+            LV_UNUSED(area);
+            LV_UNUSED(color_p);
+            // 模拟刷新完成
+            lv_display_flush_ready(disp);
+        }
+        
+        int32_t _hor_res;
+        int32_t _ver_res;
+        lv_display_t* _display = nullptr;
+};
 /**
  * @brief AppManager集成测试类
  * 
  * 测试AppManager启动和管理最小应用的基本功能
  */
+ MockLvDisplay _mock_display(100, 100);
+
 class AppManagerIntegrationTest : public Laminpie_Core_Framework {
 public:
     AppManagerIntegrationTest() : 
@@ -88,12 +153,13 @@ public:
             _app_navigation,
             _event_dispatcher,
             DeviceManager::getInstance(),
-            nullptr  // 模拟显示设备
+            _mock_display.GetDisplay()  // 模拟显示设备
         ),
         _app_manager(*this, _app_manager_data),
         _app_navigation(),
         _event_dispatcher(),
-        _test_core_home(*this, _core_home_data) {
+        _test_core_home(*this, _core_home_data)
+    {
         SYSTEM_APP_LOG_INFO("Starting AppManager integration test");
         SetupTestEnvironment();
     }
@@ -144,7 +210,7 @@ private:
         
         // 初始化核心数据
         _core_data.name = "TestFramework";
-        _core_data.screen_size = {800, 600};
+        _core_data.screen_size = {100, 100};
         _core_data.manager.app.max_running_num = 5;
         _core_data.manager.flags.enable_app_save_snapshot = false;
         
@@ -177,6 +243,7 @@ private:
         
         SYSTEM_APP_LOG_INFO("app_manager: %p", &_app_manager);
         _core_app_manager.reset(&_app_manager);
+        _display_device = _mock_display.GetDisplay();
         bool register_result = _app_manager.Install(test_app.get());
         TEST_ASSERT(register_result);
         
@@ -199,6 +266,7 @@ private:
         TEST_ASSERT(test_app->IsInitialized());
         
         SYSTEM_APP_LOG_INFO("Basic app start test passed");
+        _app_manager.DestroyApp(test_app.get());
         return TestResult::kPass;
     }
 
@@ -208,6 +276,7 @@ private:
         MinimalTestApp1Data.name = "TestApp2";
         auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
         
+        TEST_ASSERT(_app_manager.Install(test_app.get()));
         // 启动应用
         TEST_ASSERT(_app_manager.StartApp(test_app.get()));
         
@@ -227,6 +296,7 @@ private:
         _app_manager.Update();
         
         SYSTEM_APP_LOG_INFO("App state management test passed");
+        _app_manager.DestroyApp(test_app.get());
         return TestResult::kPass;
     }
 
@@ -237,6 +307,9 @@ private:
         MinimalTestApp2Data.name = "TestApp4";
         auto app1 = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
         auto app2 = std::make_unique<MinimalTestApp2>(MinimalTestApp2Data);
+
+        _app_manager.Install(app1.get());
+        _app_manager.Install(app2.get());
         
         // 启动第一个应用
         TEST_ASSERT(_app_manager.StartApp(app1.get()));
@@ -256,20 +329,21 @@ private:
         TEST_ASSERT(foreground_app == app2.get());
         
         SYSTEM_APP_LOG_INFO("Multiple apps management test passed");
+
+        _app_manager.DestroyAllApps();
         return TestResult::kPass;
     }
 
     TestResult TestAppLifecycle() {
         SYSTEM_APP_LOG_INFO("Testing app lifecycle");
         
-        MinimalTestApp1Data.name = "TestApp5";
-        auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
+        auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp5Data);
         
+        _app_manager.Install(test_app.get());
         // 启动应用
         TEST_ASSERT(_app_manager.StartApp(test_app.get()));
         
         // 更新以处理创建和恢复状态
-        _app_manager.Update();
         _app_manager.Update();
         
         // 验证应用已初始化

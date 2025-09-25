@@ -34,6 +34,8 @@ namespace laminpie::system::app {
             int Install(Laminpie_App_Base &app);
             bool InstallSystemApp(Laminpie_App_Base* app);
 
+            bool QueryAppIsInstall(Laminpie_App_Base * app);
+
             bool Uninstall(Laminpie_App_Base* app);
             bool Uninstall(Laminpie_App_Base& app);
             bool Uninstall(int id);            

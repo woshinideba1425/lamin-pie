@@ -48,7 +48,6 @@ public:
     
     /* Device */
     bool setTouchDevice(lv_indev_t *touch) const;
-    lv_display_t *getDisplayDevice(void) const { return _display_device; }
     lv_indev_t *getTouchDevice(void) const  { return _touch_device; }
 
     /* Event */

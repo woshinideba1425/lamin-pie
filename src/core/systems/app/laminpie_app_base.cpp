@@ -252,7 +252,7 @@ bool Laminpie_App_Base::StartRecordResource(void)
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
     SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource",GetName().c_str(), _id);
 
-    // disp = _framework.getDisplayDevice();
+    disp = _framework->GetDisplayDevice();
     CheckNullAndReturn(disp, false, "Invalid display");
 
     if (_flags.is_resource_recording) {
@@ -295,7 +295,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
         return true;
     }
 
-    // disp = _framework->getDisplayDevice();
+    disp = _framework->GetDisplayDevice();
     CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen
@@ -407,7 +407,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     lv_anim_t *anim_node = nullptr;
 
     // 修复：使用正确的显示设备获取方式
-    disp = lv_display_get_default();
+    disp = _framework->GetDisplayDevice();
     CheckNullAndReturn(disp, false, "Invalid display");
 
     // Screen

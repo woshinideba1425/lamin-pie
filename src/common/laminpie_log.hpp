@@ -168,27 +168,23 @@ namespace laminpie::utils {
     // 解析函数名（去除模板参数等）
     inline std::string parseFunctionName(const char* funcName) {
         if (!funcName) return "???";
-        
         std::string func(funcName);
-        
-        // 移除模板参数
-        size_t templateStart = func.find('<');
-        if (templateStart != std::string::npos) {
-            func = func.substr(0, templateStart);
-        }
-        
-        // 移除参数列表
+    
         size_t parenStart = func.find('(');
-        if (parenStart != std::string::npos) {
-            func = func.substr(0, parenStart);
-        }
-        
-        // 提取最后的函数名
+        if (parenStart != std::string::npos) func = func.substr(0, parenStart);
+    
+        auto lpos = func.find_first_not_of(' ');
+        auto rpos = func.find_last_not_of(' ');
+        if (lpos == std::string::npos) return "???";
+        func = func.substr(lpos, rpos - lpos + 1);
+    
+        size_t lastSpace = func.rfind(' ');
+        if (lastSpace != std::string::npos) func = func.substr(lastSpace + 1);
         size_t lastColon = func.rfind("::");
-        if (lastColon != std::string::npos) {
-            func = func.substr(lastColon + 2);
-        }
-        
+        if (lastColon != std::string::npos) func = func.substr(lastColon + 2);
+        size_t lt = func.find('<');
+        if (lt != std::string::npos) func = func.substr(0, lt);
+    
         return func.empty() ? "???" : func;
     }
 

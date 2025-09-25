@@ -22,7 +22,7 @@ namespace laminpie::system::app {
         CheckNullAndReturn(app, -1, "Invalid app");
 
         for (auto it = _id_installed_app_map.begin(); it != _id_installed_app_map.end(); it++ ){
-            CheckFalseReturn(it->second != app, -1, "Already installed");
+            CheckFalseExit(it->second != app, "Already installed");
         }
         CheckFalseReturn(app->OnSetup(), false, "App setup failed");
         app_installed = app->ProcessInstall(&_framework, _app_free_id);
@@ -100,6 +100,7 @@ namespace laminpie::system::app {
 
         CheckFalseReturn(_id_installed_app_map.erase(app_id) > 0, false, "Remove app failed");
 
+        _app_free_id--;
         return ret;
     }
 
@@ -124,7 +125,6 @@ namespace laminpie::system::app {
     Laminpie_App_Base *Laminpie_App_Register::GetInstalledApp(int id)
     {
         LP_LOG_TRACE_GUARD_WITH_THIS("laminpie.app");
-        vTaskDelay(pdMS_TO_TICKS(100));
         auto it = _id_installed_app_map.find(id);
         if(it != _id_installed_app_map.end()){
             return it->second;
@@ -148,4 +148,18 @@ namespace laminpie::system::app {
         return _app_free_id++;
     }
 
+    bool Laminpie_App_Register::QueryAppIsInstall(Laminpie_App_Base* app){
+        CheckNullAndReturn(app, false, "Invalid app");
+        const int app_id = app->GetId();
+        if (app_id < Laminpie_App_ID_Min) {
+            SYSTEM_APP_LOG_DEBUG("App(%s: %d) not installed", app->GetName().c_str(), app_id);
+            return false;
+        }
+
+        auto it = _id_installed_app_map.find(app_id);
+        if (it != _id_installed_app_map.end()) {
+            return it->second == app;
+        }
+        return false;
+    }
 }
