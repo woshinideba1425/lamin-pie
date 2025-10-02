@@ -167,3 +167,4 @@ using MockLvDisplayPtr = std::unique_ptr<MockLvDisplay>;
 } // namespace laminpie::test
 
 
+

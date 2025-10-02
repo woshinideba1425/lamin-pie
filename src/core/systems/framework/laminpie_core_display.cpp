@@ -20,15 +20,15 @@ Laminpie_CoreDisplay::Laminpie_CoreDisplay(Laminpie_Core_Framework &core, const 
 
 Laminpie_CoreDisplay::~Laminpie_CoreDisplay()
 {
-    SYSTEM_CORE_LOG_DEBUG("Destroy(@0x%p)", this);
+    LOGD("Destroy(@0x%p)", this);
     if(!DelCore()){
-        SYSTEM_CORE_LOG_ERROR("Delete failed");
+        LOGE("Delete failed");
     }
 }
 
 bool Laminpie_CoreDisplay::ShowContainerBorder(void)
 {
-    SYSTEM_CORE_LOG_DEBUG("Show container border");
+    LOGD("Show container border");
     utils::CheckFalseReturn(CheckCoreInitialized(), false, "Not initialized");
 
     for (size_t i = 0; i < _container_styles.size(); i++) {
@@ -40,7 +40,7 @@ bool Laminpie_CoreDisplay::ShowContainerBorder(void)
 
 bool Laminpie_CoreDisplay::HideContainerBorder(void)
 {
-    SYSTEM_CORE_LOG_DEBUG("Hide container border");
+    LOGD("Hide container border");
     utils::CheckFalseReturn(CheckCoreInitialized(), false, "Not initialized");
 
     for (auto &style : _container_styles) {
@@ -127,7 +127,7 @@ bool Laminpie_CoreDisplay::BeginCore(void)
 {
     lv_display_t *display = _core.GetDisplayDevice();
 
-    SYSTEM_CORE_LOG_DEBUG("Begin(0x%p)", this);
+    LOGD("Begin(0x%p)", this);
     utils::CheckFalseReturn(!CheckCoreInitialized(), false, "Core display Already initialized");
     utils::CheckFalseReturn(display == nullptr, false, "Invalid display device");
 
@@ -178,7 +178,7 @@ bool Laminpie_CoreDisplay::BeginCore(void)
 
 bool Laminpie_CoreDisplay::DelCore(void)
 {
-    SYSTEM_CORE_LOG_DEBUG("Delete(0x%p)", this);
+    LOGD("Delete(0x%p)", this);
 
     if (!CheckCoreInitialized()) {
         return true;
@@ -206,7 +206,7 @@ bool Laminpie_CoreDisplay::UpdateByNewData(void)
 {
     const StyleSize &screen_size = _core.GetCoreData().screen_size;
 
-    SYSTEM_CORE_LOG_DEBUG("Update core home by new data");
+    LOGD("Update core home by new data");
 
     utils::CheckFalseReturn(CheckCoreInitialized(), false, "Not initialized");
 
@@ -266,7 +266,7 @@ bool Laminpie_CoreDisplay::CalibrateCoreData(Laminpie_CoreDisplayData &data)
     // Check if all default fonts are set, if not, use internal fonts
     for (int i = StyleFont::FONT_SIZE_MIN; i <= StyleFont::FONT_SIZE_MAX; i += 2) {
         if (_update_size_font_map.find(i) == _update_size_font_map.end()) {
-            SYSTEM_APP_LOG_WARN("Default font size(%d) is not found, try to use internal font instead", i);
+            LOGW("Default font size(%d) is not found, try to use internal font instead", i);
             if (!esp_brookesia_core_utils_get_internal_font_by_size(i, &font_resource)) {
                 continue;
             }

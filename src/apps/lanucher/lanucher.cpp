@@ -106,8 +106,8 @@ namespace LAMINATEPIE {
             /* Set panel size */
             _data.appPanelHor = *_data.dispVer;
             _data.appPanelVer = *_data.dispHor / 2;
-            ESP_LOGI(TAG,"appPanelVer: %d",_data.appPanelVer);
-            ESP_LOGI(TAG,"appPanelHor: %d",_data.appPanelHor);
+            LOGI(TAG,"appPanelVer: %d",_data.appPanelVer);
+            LOGI(TAG,"appPanelHor: %d",_data.appPanelHor);
             /* Create a panel */
             _data.appPanel = lv_obj_create(ui_funtionpad);
             lv_obj_set_size(_data.appPanel, _data.appPanelHor, _data.appPanelVer);
@@ -330,8 +330,8 @@ namespace LAMINATEPIE {
             _data.infoPanelHor = *_data.dispVer;
             _data.infoPanelVer = *_data.dispHor / 2;
 
-            ESP_LOGI(TAG,"infoPanelHor: %d",_data.infoPanelHor);
-            ESP_LOGI(TAG,"infoPanelVer: %d",_data.infoPanelVer);
+            LOGI(TAG,"infoPanelHor: %d",_data.infoPanelHor);
+            LOGI(TAG,"infoPanelVer: %d",_data.infoPanelVer);
             /* Create info panel */
             _data.infoPanel = lv_obj_create(ui_funtionpad);
             lv_obj_set_size(_data.infoPanel, _data.infoPanelHor, _data.infoPanelVer);
@@ -479,7 +479,7 @@ namespace LAMINATEPIE {
 
         void Launcher::onCreate()
         {
-            ESP_LOGI(TAG,"[%s] onCreate\n", getAppName().c_str());
+            LOGI(TAG,"[%s] onCreate\n", getAppName().c_str());
             SIMPLEKV::SimpleKV_ESP* db = _framework->getDatabase();
 
             _framework->enableHignPowerMode();
@@ -501,14 +501,14 @@ namespace LAMINATEPIE {
 
         void Launcher::onResume()
         {
-            ESP_LOGI(TAG,"[%s] onResume\n", getAppName().c_str());
+            LOGI(TAG,"[%s] onResume\n", getAppName().c_str());
 
             _framework->enableHignPowerMode();
             if (is_lottie_paused) {
                 // 恢复或重新创建 Lottie 动画
                 _data.lottie_animation = lv_rlottie_create_from_raw(_data.infoPanel, 130, 130, ui_ani_sad);
                 lv_obj_align(_data.lottie_animation, LV_ALIGN_CENTER, lv_pct(3), lv_pct(2));
-                ESP_LOGI(TAG, "Lottie animation resumed.");
+                LOGI(TAG, "Lottie animation resumed.");
                 is_lottie_paused = false;
             }
         }
@@ -525,7 +525,7 @@ namespace LAMINATEPIE {
 
         void Launcher::onPause()
         {
-            ESP_LOGI(TAG,"[%s] onPause\n", getAppName().c_str());
+            LOGI(TAG,"[%s] onPause\n", getAppName().c_str());
 
             if (_data.lottie_animation) {
                 stopLottieAnimation();
@@ -535,7 +535,7 @@ namespace LAMINATEPIE {
 
         void Launcher::onDestroy()
         {
-            ESP_LOGI(TAG,"[%s] onDestroy\n", getAppName().c_str());
+            LOGI(TAG,"[%s] onDestroy\n", getAppName().c_str());
             // 删除 Lottie 动画
             stopLottieAnimation();
         }
@@ -545,7 +545,7 @@ namespace LAMINATEPIE {
                 lv_obj_del(_data.lottie_animation);  // 删除动画对象
                 lvgl_unlock();
                 _data.lottie_animation = nullptr;
-                ESP_LOGI(TAG, "Lottie animation stopped and deleted.");
+                LOGI(TAG, "Lottie animation stopped and deleted.");
             }
         }
     }

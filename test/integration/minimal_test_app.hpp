@@ -15,49 +15,49 @@ public:
         : Laminpie_App_Base(data), 
           _test_data("test_value"),
           _is_initialized(false) {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 created: %s", data.name.c_str());
+        LOGI("MinimalTestApp1 created: %s", data.name.c_str());
     }
 
     virtual ~MinimalTestApp1() {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 destroyed: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 destroyed: %s", GetName().c_str());
     }
 
     // 实现基类虚函数
     bool OnCreate() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnCreate called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnCreate called: %s", GetName().c_str());
         _is_initialized = true;
         return true;
     }
 
     bool OnClose() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnClose called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnClose called: %s", GetName().c_str());
         _is_initialized = false;
         return true;
     }
 
     bool OnResume() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnResume called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnResume called: %s", GetName().c_str());
         return true;
     }
 
     bool OnPause() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnPause called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnPause called: %s", GetName().c_str());
         return true;
     }
 
     bool OnLoop() override {
-        SYSTEM_APP_LOG_DEBUG("MinimalTestApp1 OnLoop called: %s", GetName().c_str());
+        LOGD("MinimalTestApp1 OnLoop called: %s", GetName().c_str());
         return true;
     }
 
     bool OnSetup() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnSetup called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnSetup called: %s", GetName().c_str());
         SetRunningBG(true);
         return true;
     }
 
     bool OnRunningBG() override {
-        SYSTEM_APP_LOG_INFO("MinimalTestApp1 OnRunningBG called: %s", GetName().c_str());
+        LOGI("MinimalTestApp1 OnRunningBG called: %s", GetName().c_str());
         return true;
     }
 
@@ -83,43 +83,43 @@ private:
             : Laminpie_App_Base(data), 
               _test_data("test_value"),
               _is_initialized(false) {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 created: %s", data.name.c_str());
+            LOGI("MinimalTestApp2 created: %s", data.name.c_str());
         }
     
         virtual ~MinimalTestApp2() {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 destroyed: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 destroyed: %s", GetName().c_str());
         }
     
         // 实现基类虚函数
         bool OnCreate() override {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 OnCreate called: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 OnCreate called: %s", GetName().c_str());
             _is_initialized = true;
             return true;
         }
     
         bool OnClose() override {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 OnClose called: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 OnClose called: %s", GetName().c_str());
             _is_initialized = false;
             return true;
         }
     
         bool OnResume() override {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 OnResume called: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 OnResume called: %s", GetName().c_str());
             return true;
         }
     
         bool OnPause() override {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 OnPause called: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 OnPause called: %s", GetName().c_str());
             return true;
         }
     
         bool OnLoop() override {
-            SYSTEM_APP_LOG_DEBUG("MinimalTestApp2 OnLoop called: %s", GetName().c_str());
+            LOGD("MinimalTestApp2 OnLoop called: %s", GetName().c_str());
             return true;
         }
 
         bool OnRunningBG() override {
-            SYSTEM_APP_LOG_INFO("MinimalTestApp2 OnRunningBG called: %s", GetName().c_str());
+            LOGI("MinimalTestApp2 OnRunningBG called: %s", GetName().c_str());
             return true;
         }
         // 测试辅助方法

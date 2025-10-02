@@ -87,7 +87,7 @@ namespace LAMINATEPIE
                     wday_str_ = "Monday to Friday";
                 }
                 
-                ESP_LOGI("Todo_t", "更新后remain_time: %lld", remain_time);
+                LOGI("Todo_t", "更新后remain_time: %lld", remain_time);
             }
             
             int id;

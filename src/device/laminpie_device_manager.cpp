@@ -317,11 +317,11 @@ void DeviceManager::handleBusScanComplete(const laminpie::system::event::DeviceE
         
         if (driverIt != _deviceDriverMap.end()) {
             // 设备已匹配驱动
-            ESP_LOGI("DeviceManager", "Device %s matched with driver %s", 
+            LOGI("DeviceManager", "Device %s matched with driver %s", 
                      device->id.c_str(), driverIt->second->getName().c_str());
         } else {
             // 设备未匹配驱动
-            ESP_LOGI("DeviceManager", "Device %s has no matching driver", device->id.c_str());
+            LOGI("DeviceManager", "Device %s has no matching driver", device->id.c_str());
         }
     }
 }

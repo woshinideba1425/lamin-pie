@@ -17,14 +17,14 @@ Laminpie_Core_Manager::~Laminpie_Core_Manager()
 bool Laminpie_Core_Manager::Begin()
 {
     if(_initialized) {
-        SYSTEM_EVENT_LOG_WARN("Core Manager already initialized");
+        LOGW("Core Manager already initialized");
         return false;
     }
 
     _initialized = true;
 
     RegisterEventListeners();
-    SYSTEM_MANAGER_LOG_INFO("Core Manager initialized successfully");
+    LOGI("Core Manager initialized successfully");
     return true;
 }
 

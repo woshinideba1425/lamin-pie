@@ -18,10 +18,10 @@ public:
     
     TestResult test_module_logging() {
         // 测试模块日志
-        SYSTEM_APP_LOG_INFO("Module log test");
-        SYSTEM_EVENT_LOG_DEBUG("Event module log test");
-        SYSTEM_MANAGER_LOG_WARN("Manager module log test");
-        SYSTEM_CORE_LOG_ERROR("Core module log test");
+        LOGI("Module log test");
+        LOGD("Event module log test");
+        LOGW("Manager module log test");
+        LOGE("Core module log test");
         
         return TestResult::kPass;
     }

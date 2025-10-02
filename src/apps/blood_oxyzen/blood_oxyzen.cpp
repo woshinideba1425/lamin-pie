@@ -122,13 +122,13 @@ namespace LAMINATEPIE
 
         template <typename T>
         T BloodOxyzenApp::calculateSpO2(T acRed, T dcRed, T acIR, T dcIR) {
-            ESP_LOGI("BloodOxyzenApp", 
+            LOGI("BloodOxyzenApp", 
                     "Before calculation - AC_Red: %d, DC_Red: %d, AC_IR: %d, DC_IR: %d", 
                     acRed, dcRed, acIR, dcIR);
 
             // 检查 DC 分量是否为零以避免除以零错误
             if (dcRed == 0 || dcIR == 0) {
-                ESP_LOGE("BloodOxyzenApp", "DC values cannot be zero!");
+                LOGE("BloodOxyzenApp", "DC values cannot be zero!");
                 return static_cast<T>(0);
             }
 
@@ -140,11 +140,11 @@ namespace LAMINATEPIE
             double red_ratio = std::abs(normalized_acRed);
             double ir_ratio = std::abs(normalized_acIR);
 
-            ESP_LOGI("BloodOxyzenApp", "Red ratio: %.4f, IR ratio: %.4f", red_ratio, ir_ratio);
+            LOGI("BloodOxyzenApp", "Red ratio: %.4f, IR ratio: %.4f", red_ratio, ir_ratio);
 
             // 计算 R 值
             double R = red_ratio / ir_ratio;
-            ESP_LOGI("BloodOxyzenApp", "R value: %.4f", R);
+            LOGI("BloodOxyzenApp", "R value: %.4f", R);
 
             // 使用 R 值计算 SpO2
             double SpO2_float = 100.63-2.543*R;
@@ -153,7 +153,7 @@ namespace LAMINATEPIE
                 return static_cast<T>(-1); // 超出范围，返回 -1 表示无效
             }
 
-            ESP_LOGI("BloodOxyzenApp", "Calculated SpO2 (float): %.2f", SpO2_float);
+            LOGI("BloodOxyzenApp", "Calculated SpO2 (float): %.2f", SpO2_float);
 
             // 根据模板参数类型返回结果
             if constexpr (std::is_floating_point<T>::value) {

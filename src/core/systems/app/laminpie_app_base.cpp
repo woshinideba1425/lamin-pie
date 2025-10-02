@@ -32,18 +32,18 @@ Laminpie_App_Base::Laminpie_App_Base(const Laminpie_App_Base_Data_t &data):
 bool Laminpie_App_Base::CheckInitialized(void) const{
     // 分步检查，确保安全
     if (_id < Laminpie_App_ID_Min) {
-        SYSTEM_APP_LOG_DEBUG("App(%d) CheckInitialized: false - invalid ID", _id);
+        LOGD("App(%d) CheckInitialized: false - invalid ID", _id);
         return false;
     }
     
     if (_framework == nullptr) {
-        SYSTEM_APP_LOG_DEBUG("App(%s: %d) CheckInitialized: false - framework is null", GetName().c_str(), _id);
+        LOGD("App(%s: %d) CheckInitialized: false - framework is null", GetName().c_str(), _id);
         return false;
     }
     
     // 只有在前面检查都通过时才访问framework
     bool ret = (_framework->GetAppManager().GetInstalledApp(_id) == this);
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) CheckInitialized: %d, _id: %d, _framework: %p, GetInstalledApp: %p", 
+    LOGD("App(%s: %d) CheckInitialized: %d, _id: %d, _framework: %p, GetInstalledApp: %p", 
         GetName().c_str(), _id, ret, _id, _framework, _framework->GetAppManager().GetInstalledApp(_id));
     
     return ret;
@@ -51,7 +51,7 @@ bool Laminpie_App_Base::CheckInitialized(void) const{
 
 bool Laminpie_App_Base::notifyCoreClosed(void) const{
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) notify core closed", GetName().c_str(), _id);
+    LOGD("App(%s: %d) notify core closed", GetName().c_str(), _id);
 
     if (_flags.is_closing) {
         return true;
@@ -70,7 +70,7 @@ bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *frame
     CheckNullAndReturn(framework, false, "Framework is invalid");
     CheckNullAndReturn(_core_init_data.name, false, "App name is invalid");
 
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) install", _core_init_data.name.c_str(), id);
+    LOGD("App(%s: %d) install", _core_init_data.name.c_str(), id);
 
     _core_active_data = _core_init_data;
     _framework = framework;
@@ -94,7 +94,7 @@ bool Laminpie_App_Base::ProcessInstall(framework::Laminpie_Core_Framework *frame
 
 bool Laminpie_App_Base::ProcessUninstall(void){
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) uninstall", GetName().c_str(), _id);
+    LOGD("App(%s: %d) uninstall", GetName().c_str(), _id);
 
     // _framework = nullptr;
     _core_active_data = {};
@@ -127,12 +127,12 @@ bool Laminpie_App_Base::ProcessCreate(void){
     bool ret = true;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) create", GetName().c_str(), _id);
+    LOGD("App(%s: %d) create", GetName().c_str(), _id);
 
     CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen before run failed");
 
     if (!SaveRecentScreen(true)) {
-        SYSTEM_APP_LOG_ERROR("Save recent screen after run failed");
+        LOGE("Save recent screen after run failed");
         ret = false;
     }
     _status = Laminpie_App_Event_Type::kApp_Status_Running;
@@ -148,7 +148,7 @@ bool Laminpie_App_Base::ProcessResume(void)
     bool ret = true;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) resume", GetName().c_str(), _id);
+    LOGD("App(%s: %d) resume", GetName().c_str(), _id);
 
     CheckFalseReturn(LoadRecentScreen(), false, "Load recent screen failed");
     CheckFalseReturn(LoadAppTheme(), false, "Load app theme failed");
@@ -166,7 +166,7 @@ bool Laminpie_App_Base::ProcessPause(void)
     bool ret = true;
     
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) pause", GetName().c_str(), _id);
+    LOGD("App(%s: %d) pause", GetName().c_str(), _id);
 
     CheckFalseReturn(SaveAppTheme(), false, "Save app theme failed");
     CheckFalseReturn(SaveRecentScreen(false), false, "Save recent screen failed");
@@ -183,7 +183,7 @@ bool Laminpie_App_Base::ProcessPause(void)
 bool Laminpie_App_Base::ProcessClose(bool is_app_active)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) close",GetName().c_str(), _id);
+    LOGD("App(%s: %d) close",GetName().c_str(), _id);
 
     if(_flags.is_closing){
         return true;
@@ -196,7 +196,7 @@ bool Laminpie_App_Base::ProcessClose(bool is_app_active)
 bool Laminpie_App_Base::SetVisualArea(const lv_area_t &area)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) set origin visual area[(%ld,%ld)-(%ld,%ld)]",GetName().c_str(),
+    LOGD("App(%s: %d) set origin visual area[(%ld,%ld)-(%ld,%ld)]",GetName().c_str(),
                    _id, area.x1, area.y1, area.x2, area.y2);
 
     _app_style.origin_visual_area = area;
@@ -215,7 +215,7 @@ bool Laminpie_App_Base::CalibrateVisualArea(void)
     const StyleSize &app_size = _framework->GetCoreData().screen_size;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) calibrate visual area[origin: (%ld,%ld)-(%ld,%ld)]",GetName().c_str(),
+    LOGD("App(%s: %d) calibrate visual area[origin: (%ld,%ld)-(%ld,%ld)]",GetName().c_str(),
                    _id, visual_area.x1, visual_area.y1, visual_area.x2, visual_area.y2);
 
     visual_area_w = visual_area.x2 - visual_area.x1 + 1;
@@ -239,7 +239,7 @@ bool Laminpie_App_Base::CalibrateVisualArea(void)
     _flags.is_screen_small = ((lv_area_get_height(&visual_area) < screen_size.height) ||
                               (lv_area_get_width(&visual_area) < screen_size.width));
 
-    SYSTEM_APP_LOG_DEBUG("Calibrate visual area(%ld,%ld-%ld,%ld)", visual_area.x1, visual_area.y1, visual_area.x2, visual_area.y2);
+    LOGD("Calibrate visual area(%ld,%ld-%ld,%ld)", visual_area.x1, visual_area.y1, visual_area.x2, visual_area.y2);
 
     return true;
 }
@@ -250,18 +250,18 @@ bool Laminpie_App_Base::StartRecordResource(void)
     lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) start record resource",GetName().c_str(), _id);
+    LOGD("App(%s: %d) start record resource",GetName().c_str(), _id);
 
     disp = _framework->GetDisplayDevice();
     CheckNullAndReturn(disp, false, "Invalid display");
 
     if (_flags.is_resource_recording) {
-        SYSTEM_APP_LOG_DEBUG("Recording resource is already started, don't start again");
+        LOGD("Recording resource is already started, don't start again");
         return true;
     }
 
     if (_core_active_data.flags.enable_resize_visual_area) {
-        SYSTEM_APP_LOG_DEBUG("Resieze screen to visual area[(%ld,%ld)-(%ld,%ld)]", visual_area.x1, visual_area.y1, visual_area.x2,
+        LOGD("Resieze screen to visual area[(%ld,%ld)-(%ld,%ld)]", visual_area.x1, visual_area.y1, visual_area.x2,
                        visual_area.y2);
         _display_style.w = disp->hor_res;
         _display_style.h = disp->ver_res;
@@ -288,10 +288,10 @@ bool Laminpie_App_Base::EndRecordResource(void)
     const lv_area_t &visual_area = _app_style.calibrate_visual_area;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) end record resource",GetName().c_str(), _id);
+    LOGD("App(%s: %d) end record resource",GetName().c_str(), _id);
 
     if (!_flags.is_resource_recording) {
-        SYSTEM_APP_LOG_DEBUG("Recording resource is not started, please start first");
+        LOGD("Recording resource is not started, please start first");
         return true;
     }
 
@@ -317,7 +317,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
                 lv_obj_add_event_cb(screen, onResizeScreenLoadedEventCallback, LV_EVENT_SCREEN_UNLOAD_START, this);
             }
         } else {
-            SYSTEM_APP_LOG_DEBUG("Screen(@0x%p) is already recorded", screen);
+            LOGD("Screen(@0x%p) is already recorded", screen);
         }
     }
     if ((_resource_head_screen_index >= (int)disp->screen_cnt) || (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX)) {
@@ -325,9 +325,9 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_screens_class_parent_map.clear();
         _resource_screen_count = 0;
         ret = false;
-        SYSTEM_APP_LOG_ERROR("record screen fail");
+        LOGE("record screen fail");
     } else {
-        SYSTEM_APP_LOG_DEBUG("record screen(%d): ", _resource_screen_count);
+        LOGD("record screen(%d): ", _resource_screen_count);
     }
 
     // Timer
@@ -342,7 +342,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
             _resource_timers.push_back(timer_node);
             _resource_timer_count++;
         } else {
-            SYSTEM_APP_LOG_DEBUG("Timer(@0x%p) is already recorded", timer_node);
+            LOGD("Timer(@0x%p) is already recorded", timer_node);
         }
         timer_node = lv_timer_get_next(timer_node);
     }
@@ -352,9 +352,9 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_timers_cb_usr_map.clear();
         _resource_timer_count = 0;
         ret = false;
-        SYSTEM_APP_LOG_ERROR("record timer fail");
+        LOGE("record timer fail");
     } else {
-        SYSTEM_APP_LOG_DEBUG("record timer(%d): ", _resource_timer_count);
+        LOGD("record timer(%d): ", _resource_timer_count);
     }
 
     // Animation
@@ -368,7 +368,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
             _resource_anims.push_back(anim_node);
             _resource_anim_count++;
         } else {
-            SYSTEM_APP_LOG_DEBUG("Animation(@0x%p) is already recorded", anim_node);
+            LOGD("Animation(@0x%p) is already recorded", anim_node);
         }
         // 修复：使用正确的动画链表访问方式
         anim_node = (lv_anim_t *)lv_ll_get_next(&(LV_GLOBAL_DEFAULT()->anim_state.anim_ll), anim_node);
@@ -377,13 +377,13 @@ bool Laminpie_App_Base::EndRecordResource(void)
         _resource_anims.clear();
         _resource_anims_var_exec_map.clear();
         _resource_anim_count = 0;
-        SYSTEM_APP_LOG_ERROR("record animation fail");
+        LOGE("record animation fail");
     } else {
-        SYSTEM_APP_LOG_DEBUG("record animation(%d): ", _resource_anim_count);
+        LOGD("record animation(%d): ", _resource_anim_count);
     }
 
     if (_core_active_data.flags.enable_resize_visual_area) {
-        SYSTEM_APP_LOG_DEBUG("Resize screen back to display size(%d x %d)", _display_style.w, _display_style.h);
+        LOGD("Resize screen back to display size(%d x %d)", _display_style.w, _display_style.h);
         disp->hor_res = _display_style.w;
         disp->ver_res = _display_style.h;
     }
@@ -395,7 +395,7 @@ bool Laminpie_App_Base::EndRecordResource(void)
 bool Laminpie_App_Base::CleanRecordResource(void)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean resource",GetName().c_str(), _id);
+    LOGD("App(%s: %d) clean resource",GetName().c_str(), _id);
 
     bool ret = true;
     bool do_clean = false;
@@ -420,7 +420,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (screen_it != _resource_screens.end()) {
             auto screen_map_it = _resource_screens_class_parent_map.find(screen_node);
             if (screen_map_it == _resource_screens_class_parent_map.end()) {
-                SYSTEM_APP_LOG_ERROR("Screen class parent map not found");
+                LOGE("Screen class parent map not found");
             } else {
                 if ((screen_node->class_p == screen_map_it->second.first) &&
                         (screen_node->parent == screen_map_it->second.second)) {
@@ -428,7 +428,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
                     do_clean = true;
                     resource_clean_count++;
                 } else {
-                    SYSTEM_APP_LOG_DEBUG("Screen(@0x%p) information is not matched, skip", screen_node);
+                    LOGD("Screen(@0x%p) information is not matched, skip", screen_node);
                 }
                 _resource_screens.erase(screen_it);
                 _resource_screens_class_parent_map.erase(screen_map_it);
@@ -438,9 +438,9 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        SYSTEM_APP_LOG_ERROR("Clean screen loop count exceed max");
+        LOGE("Clean screen loop count exceed max");
     } else {
-        SYSTEM_APP_LOG_DEBUG("Clean screen(%d), miss(%d): ", resource_clean_count, (int)(_resource_screen_count - resource_clean_count));
+        LOGD("Clean screen(%d), miss(%d): ", resource_clean_count, (int)(_resource_screen_count - resource_clean_count));
     }
 
     // Timer
@@ -454,7 +454,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (timer_it != _resource_timers.end()) {
             auto timer_map_it = _resource_timers_cb_usr_map.find(timer_node);
             if (timer_map_it == _resource_timers_cb_usr_map.end()) {
-                SYSTEM_APP_LOG_ERROR("Timer cb usr map not found");
+                LOGE("Timer cb usr map not found");
             } else  {
                 if ((timer_map_it->second.first == timer_node->timer_cb) &&
                         (timer_map_it->second.second == timer_node->user_data)) {
@@ -462,7 +462,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
                     do_clean = true;
                     resource_clean_count++;
                 } else {
-                    SYSTEM_APP_LOG_DEBUG("Timer(@0x%p) information is not matched, skip", timer_node);
+                    LOGD("Timer(@0x%p) information is not matched, skip", timer_node);
                 }
                 _resource_timers.erase(timer_it);
                 _resource_timers_cb_usr_map.erase(timer_map_it);
@@ -472,9 +472,9 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        SYSTEM_APP_LOG_ERROR("Clean timer loop count exceed max");
+        LOGE("Clean timer loop count exceed max");
     } else {
-        SYSTEM_APP_LOG_DEBUG("Clean timer(%d), miss(%d): ", resource_clean_count, _resource_timer_count - resource_clean_count);
+        LOGD("Clean timer(%d), miss(%d): ", resource_clean_count, _resource_timer_count - resource_clean_count);
     }
 
     // Animation
@@ -489,7 +489,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
         if (anim_it != _resource_anims.end()) {
             auto anim_map_it = _resource_anims_var_exec_map.find(anim_node);
             if (anim_map_it == _resource_anims_var_exec_map.end()) {
-                SYSTEM_APP_LOG_ERROR("Animation var exec map not found");
+                LOGE("Animation var exec map not found");
             } else  {
                 if ((anim_map_it->second.first == anim_node->var) &&
                         (anim_map_it->second.second == anim_node->exec_cb)) {
@@ -497,10 +497,10 @@ bool Laminpie_App_Base::CleanRecordResource(void)
                         do_clean = true;
                         resource_clean_count++;
                     } else {
-                        SYSTEM_APP_LOG_ERROR("Delete animation failed");
+                        LOGE("Delete animation failed");
                     }
                 } else {
-                    SYSTEM_APP_LOG_DEBUG("Anim(@0x%p) information is not matched, skip", anim_node);
+                    LOGD("Anim(@0x%p) information is not matched, skip", anim_node);
                 }
                 _resource_anims.erase(anim_it);
                 _resource_anims_var_exec_map.erase(anim_map_it);
@@ -512,9 +512,9 @@ bool Laminpie_App_Base::CleanRecordResource(void)
     }
     if (resource_loop_count >= RESOURCE_LOOP_COUNT_MAX) {
         ret = false;
-        SYSTEM_APP_LOG_ERROR("Clean timer loop count exceed max");
+        LOGE("Clean timer loop count exceed max");
     } else {
-        SYSTEM_APP_LOG_DEBUG("Clean anim(%d), miss(%d): ", resource_clean_count, _resource_anim_count - resource_clean_count);
+        LOGD("Clean anim(%d), miss(%d): ", resource_clean_count, _resource_anim_count - resource_clean_count);
     }
 
     CheckFalseReturn(ResetRecordResource(), false, "Reset record resource failed");
@@ -525,7 +525,7 @@ bool Laminpie_App_Base::CleanRecordResource(void)
 bool Laminpie_App_Base::InitDefaultScreen(void)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) init default screen",GetName().c_str(), _id);
+    LOGD("App(%s: %d) init default screen",GetName().c_str(), _id);
 
     _active_screen = lv_obj_create(nullptr);
     CheckNullAndReturn(_active_screen, false, "Create default screen failed");
@@ -538,12 +538,12 @@ bool Laminpie_App_Base::InitDefaultScreen(void)
 bool Laminpie_App_Base::CleanDefaultScreen(void)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) clean default active screen",GetName().c_str(), _id);
+    LOGD("App(%s: %d) clean default active screen",GetName().c_str(), _id);
 
     if (checkLvObjIsValid(_active_screen)) {
         lv_obj_del(_active_screen);
     } else {
-        SYSTEM_APP_LOG_WARN("Active screen is already cleaned");
+        LOGW("Active screen is already cleaned");
     }
     _active_screen = nullptr;
 
@@ -554,7 +554,7 @@ bool Laminpie_App_Base::CleanDefaultScreen(void)
 bool Laminpie_App_Base::SaveRecentScreen(bool check_valid)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save recent screen",GetName().c_str(), _id);
+    LOGD("App(%s: %d) save recent screen",GetName().c_str(), _id);
 
     lv_obj_t *active_screen = lv_disp_get_scr_act(_framework->GetDisplayDevice());
     CheckNullAndReturn(active_screen, false, "Invalid active screen");
@@ -571,7 +571,7 @@ bool Laminpie_App_Base::SaveRecentScreen(bool check_valid)
 bool Laminpie_App_Base::LoadRecentScreen(void)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load recent screen",GetName().c_str(), _id);
+    LOGD("App(%s: %d) load recent screen",GetName().c_str(), _id);
 
     // TODO
     // if (_flags.is_screen_small) {
@@ -592,7 +592,7 @@ bool Laminpie_App_Base::LoadRecentScreen(void)
 bool Laminpie_App_Base::ResetRecordResource(void)
 {
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) reset record resource",GetName().c_str(), _id);
+    LOGD("App(%s: %d) reset record resource",GetName().c_str(), _id);
 
     // Screen
     _resource_screen_count = 0;
@@ -619,13 +619,13 @@ bool Laminpie_App_Base::EnableAutoClean(void)
     lv_obj_t *last_screen = _framework->GetDisplayDevice()->scr_to_load;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) enable auto clean",GetName().c_str(), _id);
+    LOGD("App(%s: %d) enable auto clean",GetName().c_str(), _id);
 
     // Check if the last screen is valid, if not, use the active screen
     if (last_screen == nullptr) {
         last_screen = _active_screen;
     }
-    SYSTEM_APP_LOG_DEBUG("Clean resource when screen(0x%p) loaded", last_screen);
+    LOGD("Clean resource when screen(0x%p) loaded", last_screen);
 
     CheckFalseReturn(checkLvObjIsValid(last_screen), false, "Invalid last screen");
     lv_obj_add_event_cb(last_screen, onCleanResourceEventCallback, LV_EVENT_SCREEN_UNLOADED, this);
@@ -639,7 +639,7 @@ bool Laminpie_App_Base::SaveDisplayTheme(void)
     lv_theme_t *theme = nullptr;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save display theme",GetName().c_str(), _id);
+    LOGD("App(%s: %d) save display theme",GetName().c_str(), _id);
 
     display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
@@ -658,7 +658,7 @@ bool Laminpie_App_Base::LoadDisplayTheme(void)
     lv_theme_t *&theme = _display_style.theme;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load display theme",GetName().c_str(), _id);
+    LOGD("App(%s: %d) load display theme",GetName().c_str(), _id);
 
     display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
@@ -675,7 +675,7 @@ bool Laminpie_App_Base::SaveAppTheme(void)
     lv_theme_t *theme = nullptr;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) save app theme",GetName().c_str(), _id);
+    LOGD("App(%s: %d) save app theme",GetName().c_str(), _id);
 
     display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
@@ -694,7 +694,7 @@ bool Laminpie_App_Base::LoadAppTheme(void)
     lv_theme_t *&theme = _display_style.theme;
 
     CheckFalseReturn(CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("App(%s: %d) load app theme",GetName().c_str(), _id);
+    LOGD("App(%s: %d) load app theme",GetName().c_str(), _id);
 
     display = _framework->GetDisplayDevice();
     CheckNullAndReturn(display, false, "Invalid display");
@@ -709,24 +709,24 @@ void Laminpie_App_Base::onCleanResourceEventCallback(lv_event_t *event)
 {
     Laminpie_App_Base *app = nullptr;
 
-    SYSTEM_APP_LOG_DEBUG("App clean resource event callback");
+    LOGD("App clean resource event callback");
     CheckNullAndReturn(event, false, "Invalid event");
 
     app = (Laminpie_App_Base *)lv_event_get_user_data(event);
     CheckNullAndReturn(app, false, "Invalid app");
 
-    SYSTEM_APP_LOG_DEBUG("Clean app(%s: %d) resources", app->GetName().c_str(), app->_id);
+    LOGD("Clean app(%s: %d) resources", app->GetName().c_str(), app->_id);
     CheckFalseReturn(app->CheckInitialized(), false, "Not initialized");
 
     if (!app->CleanResource()) {
-        SYSTEM_APP_LOG_ERROR("Clean resource failed");
+        LOGE("Clean resource failed");
     }
     if (app->_core_active_data.flags.enable_recycle_resource) {
         if (!app->CleanRecordResource()) {
-            SYSTEM_APP_LOG_ERROR("Clean record resource failed");
+            LOGE("Clean record resource failed");
         }
     } else if (app->_core_active_data.flags.enable_default_screen && !app->CleanDefaultScreen()) {
-        SYSTEM_APP_LOG_ERROR("Clean default screen failed");
+        LOGE("Clean default screen failed");
     }
 }
 
@@ -736,7 +736,7 @@ void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *event)
     lv_obj_t *screen = nullptr;
     lv_area_t area = { 0 ,0, 0, 0};
 
-    SYSTEM_APP_LOG_DEBUG("App resize screen loaded event callback");
+    LOGD("App resize screen loaded event callback");
     CheckNullAndReturn(event, false, "Invalid event");
 
     app = (Laminpie_App_Base *)lv_event_get_user_data(event);
@@ -745,7 +745,7 @@ void Laminpie_App_Base::onResizeScreenLoadedEventCallback(lv_event_t *event)
     CheckNullAndReturn(screen, false, "Invalid screen");
 
     CheckFalseReturn(app->CheckInitialized(), false, "Not initialized");
-    SYSTEM_APP_LOG_DEBUG("Resize app(%s: %d) screen", app->GetName().c_str(), app->_id);
+    LOGD("Resize app(%s: %d) screen", app->GetName().c_str(), app->_id);
 
     area = app->GetVisualArea();
     lv_obj_set_pos(screen, area.x1, area.y1);

@@ -138,6 +138,6 @@ private:
     // 事件通知
     void notifyServiceEvent(const std::string& name, const std::string& event) {
         // 可扩展为观察者模式
-        ESP_LOGI(SERVICE_TAG,"%s %s\n", name.c_str(), event.c_str());
+        LOGI(SERVICE_TAG,"%s %s\n", name.c_str(), event.c_str());
     }
 };

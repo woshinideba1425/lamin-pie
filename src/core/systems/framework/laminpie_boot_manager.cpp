@@ -13,15 +13,15 @@ Laminpie_Boot_Manager::Laminpie_Boot_Manager(Laminpie_Boot_ManagerData_t &data)
     // Generate unique request ID for this boot session
     _current_request_id = std::to_string(std::chrono::system_clock::now().time_since_epoch().count() * std::random_device{}());
     
-    SYSTEM_CORE_LOG_INFO("BootManager: Initialized with request_id: %s", _current_request_id.c_str());
+    LOGI("BootManager: Initialized with request_id: %s", _current_request_id.c_str());
 }
 
 Laminpie_Boot_Manager::~Laminpie_Boot_Manager(void) {
-    SYSTEM_CORE_LOG_INFO("BootManager: Destroyed");
+    LOGI("BootManager: Destroyed");
 }
 
 bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framework) {
-    SYSTEM_CORE_LOG_INFO("BootManager: Starting boot sequence with request_id: %s", _current_request_id.c_str());
+    LOGI("BootManager: Starting boot sequence with request_id: %s", _current_request_id.c_str());
     
     // Boot phases configuration
     struct BootPhase {
@@ -49,7 +49,7 @@ bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framewor
         
         // Execute phase with timeout
         if (!RunPhaseWithTimeout(phase.fn, phase.type)) {
-            SYSTEM_CORE_LOG_ERROR("BootManager: Failed at phase: %s", phase.name);
+            LOGE("BootManager: Failed at phase: %s", phase.name);
             NotifyError(phase.type, -1, std::string("Failed to initialize ") + phase.name);
             _boot_status = Laminpie_Boot_Event_Type::kBoot_Stage_Failed;
             return false;
@@ -57,7 +57,7 @@ bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framewor
         
         // Notify phase completion
         NotifyComplete(phase.type);
-        SYSTEM_CORE_LOG_INFO("BootManager: Completed phase: %s", phase.name);
+        LOGI("BootManager: Completed phase: %s", phase.name);
         
         _previous_phase = phase.type;
     }
@@ -66,7 +66,7 @@ bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framewor
     _boot_status = Laminpie_Boot_Event_Type::kBoot_Stage_Complete;
     NotifyPhase(Laminpie_Boot_Event_Type::kBoot_Stage_Complete);
     
-    SYSTEM_CORE_LOG_INFO("BootManager: Boot sequence completed successfully");
+    LOGI("BootManager: Boot sequence completed successfully");
     return true;
 }
 
@@ -81,7 +81,7 @@ void Laminpie_Boot_Manager::NotifyPhase(Laminpie_Boot_Event_Type phase) {
     
     _boot_manager_data.core_event.dispatchEvent(event_data);
     
-    SYSTEM_CORE_LOG_DEBUG("BootManager: Phase notification sent - phase: %d, progress: %d%%", 
+    LOGD("BootManager: Phase notification sent - phase: %d, progress: %d%%", 
                           static_cast<int>(phase), progress);
 }
 
@@ -94,7 +94,7 @@ void Laminpie_Boot_Manager::NotifyError(Laminpie_Boot_Event_Type phase, int err,
     
     _boot_manager_data.core_event.dispatchEvent(event_data);
     
-    SYSTEM_CORE_LOG_ERROR("BootManager: Error notification sent - phase: %d, error: %d, message: %s", 
+    LOGE("BootManager: Error notification sent - phase: %d, error: %d, message: %s", 
                           static_cast<int>(phase), err, msg.c_str());
 }
 
@@ -109,7 +109,7 @@ void Laminpie_Boot_Manager::NotifyComplete(Laminpie_Boot_Event_Type phase) {
     
     _boot_manager_data.core_event.dispatchEvent(event_data);
     
-    SYSTEM_CORE_LOG_DEBUG("BootManager: Completion notification sent - phase: %d, progress: %d%%", 
+    LOGD("BootManager: Completion notification sent - phase: %d, progress: %d%%", 
                           static_cast<int>(phase), progress);
 }
 

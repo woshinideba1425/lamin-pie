@@ -91,7 +91,7 @@ namespace LAMINATEPIE
                 if (!heartRateData.initializationComplete) {
                     if (delta < 1000) {
                         heartRateData.initDeltas.push_back(delta);
-                        // ESP_LOGI("HeartRateApp", "Storing delta in initialization buffer: %ld ms", delta);
+                        // LOGI("HeartRateApp", "Storing delta in initialization buffer: %ld ms", delta);
 
                         // 如果缓冲区还未满，跳过进一步检查
                         if (heartRateData.initDeltas.size() < heartRateData.INIT_BUFFER_SIZE) {
@@ -103,13 +103,13 @@ namespace LAMINATEPIE
                         heartRateData.lastDelta = avgDelta;  // 将平均值作为初始的 lastDelta
                         heartRateData.initDeltas.clear();  // 清空缓冲区
                         heartRateData.initializationComplete = true;  // 标记初始化完成
-                        // ESP_LOGI("HeartRateApp", "Initialization complete. Using average delta: %ld ms", avgDelta);
+                        // LOGI("HeartRateApp", "Initialization complete. Using average delta: %ld ms", avgDelta);
                         heartRateData.beatsPerMinute = 60.0 / (heartRateData.lastDelta / 1000.0) + HEART_RATE_OFFSET;
                         heartRateData.heartRate = static_cast<int>(heartRateData.beatsPerMinute);
-                        // ESP_LOGI("HeartRateApp", "Initial heart rate calculated: %d BPM", heartRateData.heartRate);
+                        // LOGI("HeartRateApp", "Initial heart rate calculated: %d BPM", heartRateData.heartRate);
                         // 将初始心率存入 rates 缓冲区
                         heartRateData.rates.push_back(static_cast<uint8_t>(heartRateData.beatsPerMinute));
-                        // ESP_LOGI("HeartRateApp", "Storing initial BPM: %.2f, Size: %d", heartRateData.beatsPerMinute, heartRateData.rates.size());
+                        // LOGI("HeartRateApp", "Storing initial BPM: %.2f, Size: %d", heartRateData.beatsPerMinute, heartRateData.rates.size());
 
                         // 如果 rates 大小超过缓冲区最大值，移除最早的值
                         if (heartRateData.rates.size() > HeartRateData::RATE_SIZE) {
@@ -118,15 +118,15 @@ namespace LAMINATEPIE
                         
                         return heartRateData.heartRate;  // 返回并等待下一次心跳
                     } else {
-                        ESP_LOGW("HeartRateApp", "Skipped delta %ld ms as it is greater than 1200 ms", delta);
+                        LOGW("HeartRateApp", "Skipped delta %ld ms as it is greater than 1200 ms", delta);
                         return heartRateData.heartRate;  // delta 超过 1200 毫秒，跳过这次存储
                     }
                 }
 
                 // Step 3: 计算每分钟心跳数
                 heartRateData.beatsPerMinute = 60.0 / (delta / 1000.0) + HEART_RATE_OFFSET;
-                // ESP_LOGI("HeartRateApp", "New heart beat detected! BPM: %.2f, Delta: %ld ms", heartRateData.beatsPerMinute, delta);
-                // ESP_LOGI("HeartRateApp", "New heart beat detected! LastDelta: %ld ms, Delta: %ld ms", heartRateData.lastDelta, delta);
+                // LOGI("HeartRateApp", "New heart beat detected! BPM: %.2f, Delta: %ld ms", heartRateData.beatsPerMinute, delta);
+                // LOGI("HeartRateApp", "New heart beat detected! LastDelta: %ld ms, Delta: %ld ms", heartRateData.lastDelta, delta);
 
                 // Step 4: 仅存储有效的 beatsPerMinute 值
                 if (heartRateData.beatsPerMinute > 60 && heartRateData.beatsPerMinute < 255 && isValidInterval(delta, heartRateData.lastDelta)) {
@@ -142,7 +142,7 @@ namespace LAMINATEPIE
                         heartRateData.rates.erase(heartRateData.rates.begin());
                     }
 
-                    // ESP_LOGI("HeartRateApp", "Storing valid BPM: %.2f, Size: %d", heartRateData.beatsPerMinute, heartRateData.rates.size());
+                    // LOGI("HeartRateApp", "Storing valid BPM: %.2f, Size: %d", heartRateData.beatsPerMinute, heartRateData.rates.size());
 
                     // Step 5: 当有至少 RATE_SIZE 个有效读数时计算平均值
                     if (heartRateData.rates.size() >= heartRateData.RATE_SIZE) {
@@ -150,11 +150,11 @@ namespace LAMINATEPIE
                         float totalBPM = std::accumulate(heartRateData.rates.begin(), heartRateData.rates.end(), 0.0f);
                         heartRateData.beatAvg = totalBPM / heartRateData.rates.size();
 
-                        // ESP_LOGI("HeartRateApp", "Calculated average BPM: %.2f", heartRateData.beatAvg);
+                        // LOGI("HeartRateApp", "Calculated average BPM: %.2f", heartRateData.beatAvg);
 
                         // 更新心跳平均值并返回
                         heartRateData.heartRate = static_cast<int>(heartRateData.beatAvg);
-                        ESP_LOGI("HeartRateApp", "BPM: %.2f", heartRateData.beatAvg);
+                        LOGI("HeartRateApp", "BPM: %.2f", heartRateData.beatAvg);
                         return heartRateData.heartRate;  // 返回计算的平均心跳值
                     }
 
@@ -162,7 +162,7 @@ namespace LAMINATEPIE
                     heartRateData.validRateCount = heartRateData.rates.size();
                     return heartRateData.heartRate;  // 返回上一个有效的心跳值
                 } else {
-                    // ESP_LOGW("HeartRateApp", "Invalid BPM detected: %.2f", heartRateData.beatsPerMinute);
+                    // LOGW("HeartRateApp", "Invalid BPM detected: %.2f", heartRateData.beatsPerMinute);
                     // 不更新 lastDelta，因为当前 delta 无效
                 }
             }
@@ -198,7 +198,7 @@ namespace LAMINATEPIE
         std::optional<double> HeartRateApp::calculateRMSSD() {
             // 检查是否有足够的有效心跳间隔来进行 RMSSD 计算
             if (heartRateData.deltas.size() < 8) {
-                //ESP_LOGW("HeartRateApp", "Not enough data to calculate RMSSD. Size: %d", heartRateData.deltas.size());
+                //LOGW("HeartRateApp", "Not enough data to calculate RMSSD. Size: %d", heartRateData.deltas.size());
                 return std::nullopt;  // 返回空值，表示没有足够的数据进行计算
             }
 
@@ -211,7 +211,7 @@ namespace LAMINATEPIE
 
             // 计算 RMSSD
             double rmssd = sqrt(sumSquaredDiffs / (heartRateData.deltas.size() - 1)) - 10;
-            //// ESP_LOGI("HeartRateApp", "Calculated RMSSD: %.2f", rmssd);
+            //// LOGI("HeartRateApp", "Calculated RMSSD: %.2f", rmssd);
 
             return rmssd;  // 返回有效的 RMSSD 数值
         }

@@ -10,28 +10,28 @@ Laminpie_App_Navigation::Laminpie_App_Navigation()
     : _current_app_id(-1), _previous_app_id(-1), 
       _next_app_id(-1), _parent_app_id(-1), _first_child_app_id(-1),
       _is_navigating(false), _last_navigation_time(0), _event_dispatcher(nullptr) {
-    SYSTEM_APP_LOG_INFO("App navigation system initialized - home state ready");
+    LOGI("App navigation system initialized - home state ready");
 }
 
 bool Laminpie_App_Navigation::NavigateToApp(int appId) {
     if (_is_navigating) {
-        SYSTEM_APP_LOG_WARN("Navigation already in progress, cannot navigate to: %d", appId);
+        LOGW("Navigation already in progress, cannot navigate to: %d", appId);
         return false;
     }
     
     if (!IsAppRegistered(appId)) {
-        SYSTEM_APP_LOG_ERROR("App not registered: %d", appId);
+        LOGE("App not registered: %d", appId);
         return false;
     }
     
     if (IsCurrentApp(appId)) {
-        SYSTEM_APP_LOG_DEBUG("Already at requested app: %d", appId);
+        LOGD("Already at requested app: %d", appId);
         return true;
     }
     
     // 验证导航路径
     if (!ValidateNavigationPath(appId)) {
-        SYSTEM_APP_LOG_ERROR("Invalid navigation path to app: %d", appId);
+        LOGE("Invalid navigation path to app: %d", appId);
         return false;
     }
     
@@ -64,7 +64,7 @@ bool Laminpie_App_Navigation::NavigateToApp(int appId) {
     _last_navigation_time = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     
-    SYSTEM_APP_LOG_INFO("Successfully navigated from %d to %d", 
+    LOGI("Successfully navigated from %d to %d", 
                        fromAppId ? fromAppId : -1, 
                        appId);
     
@@ -80,12 +80,12 @@ bool Laminpie_App_Navigation::NavigateToApp(int appId) {
 
 bool Laminpie_App_Navigation::NavigateToHome() {
     if (_is_navigating) {
-        SYSTEM_APP_LOG_WARN("Navigation already in progress, cannot navigate to home");
+        LOGW("Navigation already in progress, cannot navigate to home");
         return false;
     }
     
     if (IsAtHome()) {
-        SYSTEM_APP_LOG_DEBUG("Already at home");
+        LOGD("Already at home");
         return true;
     }
     
@@ -109,7 +109,7 @@ bool Laminpie_App_Navigation::NavigateToHome() {
     _last_navigation_time = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     
-    SYSTEM_APP_LOG_INFO("Successfully navigated from app %d to home", fromAppId);
+    LOGI("Successfully navigated from app %d to home", fromAppId);
     
     // 发送导航完成事件
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_COMPLETED, 
@@ -123,7 +123,7 @@ bool Laminpie_App_Navigation::NavigateToHome() {
 
 bool Laminpie_App_Navigation::NavigateToPreviousApp() {
     if (_previous_app_id == -1) {
-        SYSTEM_APP_LOG_WARN("No previous app available");
+        LOGW("No previous app available");
         return false;
     }
     
@@ -132,7 +132,7 @@ bool Laminpie_App_Navigation::NavigateToPreviousApp() {
 
 bool Laminpie_App_Navigation::NavigateToNextApp() {
     if (_next_app_id == -1) {
-        SYSTEM_APP_LOG_WARN("No next app available");
+        LOGW("No next app available");
         return false;
     }
     
@@ -141,7 +141,7 @@ bool Laminpie_App_Navigation::NavigateToNextApp() {
 
 bool Laminpie_App_Navigation::NavigateToParentApp() {
     if (_parent_app_id == -1) {
-        SYSTEM_APP_LOG_WARN("No parent app available");
+        LOGW("No parent app available");
         return false;
     }
     
@@ -150,7 +150,7 @@ bool Laminpie_App_Navigation::NavigateToParentApp() {
 
 bool Laminpie_App_Navigation::NavigateToChildApp() {
     if (_first_child_app_id == -1) {
-        SYSTEM_APP_LOG_WARN("No child app available");
+        LOGW("No child app available");
         return false;
     }
     
@@ -186,7 +186,7 @@ int Laminpie_App_Navigation::GetFirstChildAppId() const {
 
 bool Laminpie_App_Navigation::RegisterApp(int appId, const std::string& appName) {
     if (IsAppRegistered(appId)) {
-        SYSTEM_APP_LOG_WARN("App already registered: %d", appId);
+        LOGW("App already registered: %d", appId);
         return false;
     }
     
@@ -200,19 +200,19 @@ bool Laminpie_App_Navigation::RegisterApp(int appId, const std::string& appName)
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_APP_REGISTERED, 
                        -1, appId, true);  // source_app = -1 表示从home注册
     
-    SYSTEM_APP_LOG_INFO("Successfully registered app: %d (%s)", appId, appName.c_str());
+    LOGI("Successfully registered app: %d (%s)", appId, appName.c_str());
     return true;
 }
 
 bool Laminpie_App_Navigation::UnregisterApp(int appId) {
     if (!IsAppRegistered(appId)) {
-        SYSTEM_APP_LOG_WARN("App not registered: %d", appId);
+        LOGW("App not registered: %d", appId);
         return false;
     }
     
     // 检查是否为当前App
     if (IsCurrentApp(appId)) {
-        SYSTEM_APP_LOG_WARN("Cannot unregister current app: %d", appId);
+        LOGW("Cannot unregister current app: %d", appId);
         return false;
     }
     
@@ -229,23 +229,23 @@ bool Laminpie_App_Navigation::UnregisterApp(int appId) {
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_APP_UNREGISTERED, 
                        appId, -1, true);  // target_app = -1 表示回到home
     
-    SYSTEM_APP_LOG_INFO("Successfully unregistered app: %d", appId);
+    LOGI("Successfully unregistered app: %d", appId);
     return true;
 }
 
 bool Laminpie_App_Navigation::SetAppRelationship(int parentId, int childId) {
     if (!IsAppRegistered(parentId)) {
-        SYSTEM_APP_LOG_ERROR("Parent app not registered: %d", parentId);
+        LOGE("Parent app not registered: %d", parentId);
         return false;
     }
     
     if (!IsAppRegistered(childId)) {
-        SYSTEM_APP_LOG_ERROR("Child app not registered: %d", childId);
+        LOGE("Child app not registered: %d", childId);
         return false;
     }
     
     if (parentId == childId) {
-        SYSTEM_APP_LOG_ERROR("Cannot set self as parent");
+        LOGE("Cannot set self as parent");
         return false;
     }
     
@@ -257,7 +257,7 @@ bool Laminpie_App_Navigation::SetAppRelationship(int parentId, int childId) {
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_RELATIONSHIP_CHANGED, 
                        parentId, childId, true);
     
-    SYSTEM_APP_LOG_INFO("Set parent-child relationship: %d -> %d", parentId, childId);
+    LOGI("Set parent-child relationship: %d -> %d", parentId, childId);
     return true;
 }
 
@@ -265,17 +265,17 @@ bool Laminpie_App_Navigation::SetAppLinearRelationship(int previousId,
                                                        int currentId, 
                                                        int nextId) {
     if (!IsAppRegistered(currentId)) {
-        SYSTEM_APP_LOG_ERROR("Current app not registered: %d", currentId);
+        LOGE("Current app not registered: %d", currentId);
         return false;
     }
     
     if (previousId >= 0 && !IsAppRegistered(previousId)) {
-        SYSTEM_APP_LOG_ERROR("Previous app not registered: %d", previousId);
+        LOGE("Previous app not registered: %d", previousId);
         return false;
     }
     
     if (nextId >= 0 && !IsAppRegistered(nextId)) {
-        SYSTEM_APP_LOG_ERROR("Next app not registered: %d", nextId);
+        LOGE("Next app not registered: %d", nextId);
         return false;
     }
     
@@ -294,7 +294,7 @@ bool Laminpie_App_Navigation::SetAppLinearRelationship(int previousId,
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_RELATIONSHIP_CHANGED, 
                        currentId, -1, true);
     
-    SYSTEM_APP_LOG_INFO("Set linear relationship: %s <-> %s <-> %s", 
+    LOGI("Set linear relationship: %s <-> %s <-> %s", 
                        previousId >= 0 ? std::to_string(previousId).c_str() : "none",
                        std::to_string(currentId).c_str(),
                        nextId >= 0 ? std::to_string(nextId).c_str() : "none");
@@ -303,7 +303,7 @@ bool Laminpie_App_Navigation::SetAppLinearRelationship(int previousId,
 
 void Laminpie_App_Navigation::ClearNavigationHistory() {
     _navigation_history.clear();
-    SYSTEM_APP_LOG_INFO("Navigation history cleared");
+    LOGI("Navigation history cleared");
 }
 
 std::vector<NavigationHistory> Laminpie_App_Navigation::GetNavigationHistory() const {
@@ -355,17 +355,17 @@ std::string Laminpie_App_Navigation::GetNavigationStateString() const {
 }
 
 void Laminpie_App_Navigation::DumpNavigationState() const {
-    SYSTEM_APP_LOG_INFO("=== Navigation State Dump ===");
-    SYSTEM_APP_LOG_INFO("Current App: %d", _current_app_id);
-    SYSTEM_APP_LOG_INFO("Previous App: %d", _previous_app_id);
-    SYSTEM_APP_LOG_INFO("Next App: %d", _next_app_id);
-    SYSTEM_APP_LOG_INFO("Parent App: %d", _parent_app_id);
-    SYSTEM_APP_LOG_INFO("First Child App: %d", _first_child_app_id);
-    SYSTEM_APP_LOG_INFO("Registered Apps: %zu", _registered_apps.size());
-    SYSTEM_APP_LOG_INFO("History Size: %zu", _navigation_history.size());
-    SYSTEM_APP_LOG_INFO("Is Navigating: %s", _is_navigating ? "true" : "false");
-    SYSTEM_APP_LOG_INFO("Event Dispatcher: %s", _event_dispatcher ? "set" : "not set");
-    SYSTEM_APP_LOG_INFO("================================");
+    LOGI("=== Navigation State Dump ===");
+    LOGI("Current App: %d", _current_app_id);
+    LOGI("Previous App: %d", _previous_app_id);
+    LOGI("Next App: %d", _next_app_id);
+    LOGI("Parent App: %d", _parent_app_id);
+    LOGI("First Child App: %d", _first_child_app_id);
+    LOGI("Registered Apps: %zu", _registered_apps.size());
+    LOGI("History Size: %zu", _navigation_history.size());
+    LOGI("Is Navigating: %s", _is_navigating ? "true" : "false");
+    LOGI("Event Dispatcher: %s", _event_dispatcher ? "set" : "not set");
+    LOGI("================================");
 }
 
 bool Laminpie_App_Navigation::UpdateNavigationHistory(int appId) {
@@ -386,7 +386,7 @@ void Laminpie_App_Navigation::NotifyNavigationEvent(int fromAppId, int toAppId) 
         try {
             _navigation_callback(fromAppId, toAppId);
         } catch (const std::exception& e) {
-            SYSTEM_APP_LOG_ERROR("Navigation callback exception: %s", e.what());
+            LOGE("Navigation callback exception: %s", e.what());
         }
     }
 }
@@ -454,7 +454,7 @@ void Laminpie_App_Navigation::SendNavigationEvent(Laminpie_App_Navigation_Event_
                                                  bool success,
                                                  const std::string& error_msg) {
     if (!_event_dispatcher) {
-        SYSTEM_APP_LOG_DEBUG("Event dispatcher not set, skipping navigation event");
+        LOGD("Event dispatcher not set, skipping navigation event");
         return;
     }
     
@@ -474,12 +474,12 @@ void Laminpie_App_Navigation::SendNavigationEvent(Laminpie_App_Navigation_Event_
         // 发送事件
         _event_dispatcher->postEvent(nav_event);
         
-        SYSTEM_APP_LOG_DEBUG("Navigation event sent: %s [%d -> %d] success=%s", 
+        LOGD("Navigation event sent: %s [%d -> %d] success=%s", 
                            nav_event->GetTypeIndexString().c_str(),
                            source_app, target_app,
                            success ? "true" : "false");
     } catch (const std::exception& e) {
-        SYSTEM_APP_LOG_ERROR("Failed to send navigation event: %s", e.what());
+        LOGE("Failed to send navigation event: %s", e.what());
     }
 }
 
@@ -493,7 +493,7 @@ bool Laminpie_App_Navigation::CanNavigateToHome() const {
 }
 
 bool Laminpie_App_Navigation::ForceReturnToHome() {
-    SYSTEM_APP_LOG_WARN("Force returning to home state");
+    LOGW("Force returning to home state");
     
     // 强制重置所有导航状态
     int fromAppId = _current_app_id;
@@ -509,7 +509,7 @@ bool Laminpie_App_Navigation::ForceReturnToHome() {
     SendNavigationEvent(Laminpie_App_Navigation_Event_Type::kNAVIGATE_TYPE_TO_HOME, 
                        fromAppId, -1, true);
     
-    SYSTEM_APP_LOG_INFO("Force returned to home from app: %d", fromAppId);
+    LOGI("Force returned to home from app: %d", fromAppId);
     return true;
 }
 

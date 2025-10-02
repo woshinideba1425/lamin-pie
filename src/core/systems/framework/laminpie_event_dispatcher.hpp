@@ -52,12 +52,12 @@ public:
     
     // 初始化函数
     void Init() {
-        SYSTEM_EVENT_LOG_INFO("LaminPie system event module initialized");
+        LOGI("LaminPie system event module initialized");
     }
     
     // 清理函数（可选）
     void Cleanup() {
-        SYSTEM_EVENT_LOG_INFO("LaminPie system event module cleaning up...");
+        LOGI("LaminPie system event module cleaning up...");
         
         // 清理资源
         std::lock_guard<std::mutex> lock(_mutex);
@@ -68,7 +68,7 @@ public:
             _eventQueue.pop();
         }
         
-        SYSTEM_EVENT_LOG_INFO("LaminPie system event module cleanup completed");
+        LOGI("LaminPie system event module cleanup completed");
     }
 
     // 通用事件监听器结构
@@ -99,7 +99,7 @@ public:
     uint32_t addEventListener(typename EventType::EnumTypeAlias event_type, CallbackType callback) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        SYSTEM_EVENT_LOG_DEBUG("Adding event listener for type: %d", static_cast<int>(event_type));
+        LOGD("Adding event listener for type: %d", static_cast<int>(event_type));
         
         // 将具体类型的回调包装为通用回调
         auto wrapper = [cb = std::move(callback), event_type](const IEvent& event) {
@@ -129,7 +129,7 @@ public:
     uint32_t addEventListenerForAll(CallbackType callback) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        SYSTEM_EVENT_LOG_DEBUG("Adding event listener for all events of type: %s", 
+        LOGD("Adding event listener for all events of type: %s", 
                               typeid(typename EventType::EnumTypeAlias).name());
         
         // 包装回调，监听所有该枚举类型的事件
@@ -190,12 +190,12 @@ public:
             for (auto it = listeners->begin(); it != listeners->end(); ++it) {
                 if (it->id == listenerId) {
                     listeners->erase(it);
-                    SYSTEM_EVENT_LOG_DEBUG("Removed event listener with ID: %" PRIu32, listenerId);
+                    LOGD("Removed event listener with ID: %" PRIu32, listenerId);
                     return true;
                 }
             }
         }
-        SYSTEM_EVENT_LOG_WARN("Event listener with ID %" PRIu32 " not found", listenerId);
+        LOGW("Event listener with ID %" PRIu32 " not found", listenerId);
         return false;
     }
     
@@ -211,7 +211,7 @@ public:
     void dispatchEvent(const EventType& event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        SYSTEM_EVENT_LOG_DEBUG("Dispatching [%s] event: %s", 
+        LOGD("Dispatching [%s] event: %s", 
                               event.GetEventName().c_str(), 
                               event.GetTypeIndexString().c_str());
         
@@ -249,7 +249,7 @@ public:
                     const IEvent& baseEvent = static_cast<const IEvent&>(event);
                     listener.callback(baseEvent);
                 } catch (const std::exception& e) {
-                    SYSTEM_EVENT_LOG_ERROR("Exception in event callback: %s", e.what());
+                    LOGE("Exception in event callback: %s", e.what());
                 }
             }
         }
@@ -273,7 +273,7 @@ public:
             _condition.notify_one();
         }
         
-        SYSTEM_EVENT_LOG_DEBUG("Posted [%s] event to queue: %s", event->GetEventName().c_str(), event->GetTypeIndexString().c_str());
+        LOGD("Posted [%s] event to queue: %s", event->GetEventName().c_str(), event->GetTypeIndexString().c_str());
     }
     
     
@@ -286,7 +286,7 @@ public:
     bool start() {
         std::lock_guard<std::mutex> lock(_mutex);
         if (_workerThread != nullptr) {
-            SYSTEM_EVENT_LOG_WARN("Event dispatcher worker thread already started");
+            LOGW("Event dispatcher worker thread already started");
             return true;
         }
         
@@ -301,14 +301,14 @@ public:
         );
         
         if (result.is_err()) {
-            SYSTEM_EVENT_LOG_ERROR("Failed to create event dispatcher worker thread: %s", 
+            LOGE("Failed to create event dispatcher worker thread: %s", 
                                   result.error()->message().c_str());
             _running = false;
             return false;
         }
         
         _workerThread = result.unwrap();
-        SYSTEM_EVENT_LOG_INFO("Event dispatcher worker thread started successfully");
+        LOGI("Event dispatcher worker thread started successfully");
         return true;
     }
     
@@ -324,7 +324,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(_mutex);
             if (_workerThread == nullptr) {
-                SYSTEM_EVENT_LOG_WARN("Event dispatcher worker thread not started");
+                LOGW("Event dispatcher worker thread not started");
                 return true;
             }
             
@@ -337,7 +337,7 @@ public:
         // 等待线程结束
         auto join_result = laminpie_thread_join(thread_to_join, 5000);  // 5秒超时
         if (join_result.is_err()) {
-            SYSTEM_EVENT_LOG_ERROR("Failed to join event dispatcher worker thread: %s", 
+            LOGE("Failed to join event dispatcher worker thread: %s", 
                                   join_result.error()->message().c_str());
             return false;
         }
@@ -345,12 +345,12 @@ public:
         // 删除线程资源
         auto delete_result = laminpie_thread_delete(thread_to_join);
         if (delete_result.is_err()) {
-            SYSTEM_EVENT_LOG_ERROR("Failed to delete event dispatcher worker thread: %s", 
+            LOGE("Failed to delete event dispatcher worker thread: %s", 
                                   delete_result.error()->message().c_str());
             return false;
         }
         
-        SYSTEM_EVENT_LOG_INFO("Event dispatcher worker thread stopped successfully");
+        LOGI("Event dispatcher worker thread stopped successfully");
         return true;
     }
 
@@ -424,7 +424,7 @@ private:
      * then dispatches events in FIFO order via processQueuedEvent().
      */
     void eventHandler() {
-        SYSTEM_EVENT_LOG_DEBUG("Event loop started");
+        LOGD("Event loop started");
         
         while (_running.load()) {
             std::shared_ptr<IEvent> event;
@@ -451,7 +451,7 @@ private:
             }
         }
         
-        SYSTEM_EVENT_LOG_DEBUG("Event loop stopped");
+        LOGD("Event loop stopped");
     }
 
     // 处理队列中的事件
@@ -479,7 +479,7 @@ private:
                 try {
                     listener.callback(event);
                 } catch (const std::exception& e) {
-                    SYSTEM_EVENT_LOG_ERROR("Exception in queued event callback: %s", e.what());
+                    LOGE("Exception in queued event callback: %s", e.what());
                 }
             }
         }

@@ -1,6 +1,6 @@
 #include "alarm.h"
 #include "Lcd/hal_lcd.h"
-#include "esp_log.h" // For ESP_LOGI/ESP_LOGE if not already included
+#include "esp_log.h" // For LOGI/LOGE if not already included
 #include "ui.h"
 #include <sys/_stdint.h>
 
@@ -16,7 +16,7 @@ namespace LAMINATEPIE
 
             void AlarmPanel::onCreate() {
 
-                ESP_LOGI("AlarmPanel", "onCreate: panel()=%p", panel());
+                LOGI("AlarmPanel", "onCreate: panel()=%p", panel());
                 // 转换时间戳为各种格式
                 lv_obj_t* panel_obj = panel();
                 lv_obj_set_width(panel_obj, lv_pct(100));
@@ -46,7 +46,7 @@ namespace LAMINATEPIE
                     // 更新Todo的激活状态
                     if (panel && panel->_todo) {
                         panel->_todo->is_active_ = is_checked;
-                        ESP_LOGI("AlarmPanel", "闹钟状态已更改: %s", is_checked ? "激活" : "关闭");
+                        LOGI("AlarmPanel", "闹钟状态已更改: %s", is_checked ? "激活" : "关闭");
                         
                     }
                 }, LV_EVENT_VALUE_CHANGED, this);
@@ -73,7 +73,7 @@ namespace LAMINATEPIE
             }
 
             void AlarmPanel::onDestroy() {
-                ESP_LOGI("AlarmPanel", "onDestroy: panel()=%p", panel());
+                LOGI("AlarmPanel", "onDestroy: panel()=%p", panel());
                 if (_app_ptr && _todo) {
                     _app_ptr->removeTodoById(_todo->id);
                 }
@@ -123,9 +123,9 @@ namespace LAMINATEPIE
             LAMINATEPIE::DataTime_t tm_cur;
             app->rtc->getTime(tm_cur);
             int64_t current_time = tm_cur.TotalSeconds();
-            ESP_LOGI("lvgl_callback","current time year: %d, month: %d, day: %d, hour: %d, min: %d, wday: %d", 
+            LOGI("lvgl_callback","current time year: %d, month: %d, day: %d, hour: %d, min: %d, wday: %d", 
                         tm_cur.year, tm_cur.mon, tm_cur.mday, tm_cur.hour, tm_cur.min, tm_cur.wday);
-            ESP_LOGI("lvgl_callback", "aim_hour: %d, aim_min: %d, aim_time_str: %s", aim_hour, aim_min, alert_time_str.c_str());
+            LOGI("lvgl_callback", "aim_hour: %d, aim_min: %d, aim_time_str: %s", aim_hour, aim_min, alert_time_str.c_str());
             char option[20];
             lv_dropdown_get_selected_str(ui_repeat_drowdown, option, 20);
             
@@ -137,7 +137,7 @@ namespace LAMINATEPIE
                 std::shared_ptr<Todo_t> todo = std::make_shared<Todo_t>(tm_cur, aim_hour, 
                     aim_min, TODO_ONCE, alert_time_str);
                 todo->id = todo_id;
-                ESP_LOGI("lvgl_callback", "todo->remain_time: %lld", todo->remain_time);
+                LOGI("lvgl_callback", "todo->remain_time: %lld", todo->remain_time);
                 app->_todo_list.push_back(todo);
                 if(app->getScreen() != NULL){
                     AlarmPanel* panel = new AlarmPanel(app->getScreen(), todo, app);
@@ -179,7 +179,7 @@ namespace LAMINATEPIE
             app->_alarm_list->slide(SlideListContainer::Direction::InFromRight);
             app->_alarm_list->enableSwipe(true);
             lv_obj_add_flag(ui_clock_set_setting, LV_OBJ_FLAG_HIDDEN);
-            ESP_LOGI("lvgl_callback", "on_set_alert: ui_clock_set_setting hidden");
+            LOGI("lvgl_callback", "on_set_alert: ui_clock_set_setting hidden");
         }
 
         void AlarmApp::save_config_to_nvs()
@@ -230,11 +230,11 @@ namespace LAMINATEPIE
             
             for (auto& todo : _todo_list) {
                 bool was_active = todo->is_active_;
-                ESP_LOGI("AlarmApp", "current_time: %lld", current_time.TotalSeconds());
-                ESP_LOGI("AlarmPanel", "todo->is_active_: %d, id: %d", todo->is_active_, todo->id);
+                LOGI("AlarmApp", "current_time: %lld", current_time.TotalSeconds());
+                LOGI("AlarmPanel", "todo->is_active_: %d, id: %d", todo->is_active_, todo->id);
                 if(todo->is_active_){
                     todo->update_remain_time(current_time);
-                    ESP_LOGI("AlarmApp", "todo->remain_time: %lld", todo->remain_time);
+                    LOGI("AlarmApp", "todo->remain_time: %lld", todo->remain_time);
                 
                     if (todo->remain_time > 0 && todo->remain_time < min_remain_time) {
                         min_remain_time = todo->remain_time;
@@ -250,7 +250,7 @@ namespace LAMINATEPIE
             // 只有存在激活的闹钟(min_remain_time不等于初始值)才设置唤醒闹钟
             if (min_remain_time != INT64_MAX) {
                 _framework->getSystemTask().set_custom_wakeup_alarm(min_remain_time);
-                ESP_LOGI("AlarmApp", "下一个闹钟剩余时间: %lld 秒", min_remain_time);
+                LOGI("AlarmApp", "下一个闹钟剩余时间: %lld 秒", min_remain_time);
             }
 
             vTaskDelay(pdMS_TO_TICKS(1000));

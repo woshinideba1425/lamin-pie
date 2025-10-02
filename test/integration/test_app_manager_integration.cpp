@@ -45,11 +45,11 @@ class TestCoreDisplay : public Laminpie_CoreDisplay {
 public:
     TestCoreDisplay(Laminpie_Core_Framework &core, const Laminpie_CoreDisplayData &data) 
         : Laminpie_CoreDisplay(core, data) {
-        SYSTEM_CORE_LOG_INFO("TestCoreDisplay created");
+        LOGI("TestCoreDisplay created");
     }
     
     ~TestCoreDisplay() {
-        SYSTEM_CORE_LOG_INFO("TestCoreDisplay destroyed");
+        LOGI("TestCoreDisplay destroyed");
     }
     
     bool ProcessAppInstall(Laminpie_App_Base *app) override { return true; }
@@ -66,11 +66,11 @@ class TestCoreHome : public Laminpie_CoreHome {
 public:
     TestCoreHome(Laminpie_Core_Framework &core, const Laminpie_CoreHomeData_t &data) 
         : Laminpie_CoreHome(core, data) {
-        SYSTEM_CORE_LOG_INFO("TestCoreHome created");
+        LOGI("TestCoreHome created");
     }
     
     virtual ~TestCoreHome() {
-        SYSTEM_CORE_LOG_INFO("TestCoreHome destroyed");
+        LOGI("TestCoreHome destroyed");
     }
 
     bool ProcessAppInstall(Laminpie_App_Base *app) override { return true; }
@@ -106,11 +106,8 @@ class MockLvDisplay {
             lv_color32_t test_fb[(_hor_res + LV_DRAW_BUF_STRIDE_ALIGN - 1) * _ver_res + LV_DRAW_BUF_ALIGN];
             
             // 创建显示设备
-            _display = lv_display_create(_hor_res, _ver_res);
-            if (!_display) {
-                SYSTEM_CORE_LOG_ERROR("Failed to create mock display");
-                return;
-            }
+            assert(_display = lv_display_create(_hor_res, _ver_res));
+            
             
             // 设置缓冲区
             lv_display_set_buffers(_display, 
@@ -122,7 +119,6 @@ class MockLvDisplay {
             // 设置模拟刷新回调
             lv_display_set_flush_cb(_display, MockFlushCallback);
             
-            SYSTEM_CORE_LOG_INFO("Mock display created: %lux%lu", _hor_res, _ver_res);
         }
         
         static void MockFlushCallback(lv_display_t * disp, const lv_area_t * area, uint8_t * color_p) {
@@ -160,53 +156,53 @@ public:
         _event_dispatcher(),
         _test_core_home(*this, _core_home_data)
     {
-        SYSTEM_APP_LOG_INFO("Starting AppManager integration test");
+        LOGI("Starting AppManager integration test");
         SetupTestEnvironment();
     }
 
     ~AppManagerIntegrationTest() {
         CleanupTestEnvironment();
-        SYSTEM_APP_LOG_INFO("AppManager integration test completed");
+        LOGI("AppManager integration test completed");
     }
 
     TestResult RunAllTests() {
-        SYSTEM_APP_LOG_INFO("Running all AppManager integration tests");
+        LOGI("Running all AppManager integration tests");
         
         // 测试1: 基本启动测试
         TestResult result1 = TestBasicAppStart();
         if (result1 != TestResult::kPass) {
-            SYSTEM_APP_LOG_ERROR("TestBasicAppStart failed");
+            LOGE("TestBasicAppStart failed");
             return result1;
         }
         
         // 测试2: 应用状态管理测试
         TestResult result2 = TestAppStateManagement();
         if (result2 != TestResult::kPass) {
-            SYSTEM_APP_LOG_ERROR("TestAppStateManagement failed");
+            LOGE("TestAppStateManagement failed");
             return result2;
         }
         
         // 测试3: 多应用管理测试
         TestResult result3 = TestMultipleAppsManagement();
         if (result3 != TestResult::kPass) {
-            SYSTEM_APP_LOG_ERROR("TestMultipleAppsManagement failed");
+            LOGE("TestMultipleAppsManagement failed");
             return result3;
         }
         
         // 测试4: 应用生命周期测试
         TestResult result4 = TestAppLifecycle();
         if (result4 != TestResult::kPass) {
-            SYSTEM_APP_LOG_ERROR("TestAppLifecycle failed");
+            LOGE("TestAppLifecycle failed");
             return result4;
         }
         
-        SYSTEM_APP_LOG_INFO("All AppManager integration tests passed!");
+        LOGI("All AppManager integration tests passed!");
         return TestResult::kPass;
     }
 
 private:
     void SetupTestEnvironment() {
-        SYSTEM_APP_LOG_INFO("Setting up test environment");
+        LOGI("Setting up test environment");
         
         // 初始化核心数据
         _core_data.name = "TestFramework";
@@ -222,26 +218,26 @@ private:
         _app_manager_data.app.max_running_num = 5;
         _app_manager_data.flags.enable_app_save_snapshot = false;
         
-        SYSTEM_APP_LOG_INFO("Test environment setup completed");
+        LOGI("Test environment setup completed");
     }
 
     void CleanupTestEnvironment() {
-        SYSTEM_APP_LOG_INFO("Cleaning up test environment");
+        LOGI("Cleaning up test environment");
         
         // 通过框架清理所有应用
         GetAppManager().DestroyAllApps();
         
-        SYSTEM_APP_LOG_INFO("Test environment cleanup completed");
+        LOGI("Test environment cleanup completed");
     }
 
     TestResult TestBasicAppStart() {
-        SYSTEM_APP_LOG_INFO("Testing basic app start");
+        LOGI("Testing basic app start");
         
         // 创建测试应用
         MinimalTestApp1Data.name = "TestApp1";
         auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
         
-        SYSTEM_APP_LOG_INFO("app_manager: %p", &_app_manager);
+        LOGI("app_manager: %p", &_app_manager);
         _core_app_manager.reset(&_app_manager);
         _display_device = _mock_display.GetDisplay();
         bool register_result = _app_manager.Install(test_app.get());
@@ -265,13 +261,13 @@ private:
         // 验证应用是否已初始化
         TEST_ASSERT(test_app->IsInitialized());
         
-        SYSTEM_APP_LOG_INFO("Basic app start test passed");
+        LOGI("Basic app start test passed");
         _app_manager.DestroyApp(test_app.get());
         return TestResult::kPass;
     }
 
     TestResult TestAppStateManagement() {
-        SYSTEM_APP_LOG_INFO("Testing app state management");
+        LOGI("Testing app state management");
         
         MinimalTestApp1Data.name = "TestApp2";
         auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp1Data);
@@ -295,13 +291,13 @@ private:
         // 更新以处理恢复状态
         _app_manager.Update();
         
-        SYSTEM_APP_LOG_INFO("App state management test passed");
+        LOGI("App state management test passed");
         _app_manager.DestroyApp(test_app.get());
         return TestResult::kPass;
     }
 
     TestResult TestMultipleAppsManagement() {
-        SYSTEM_APP_LOG_INFO("Testing multiple apps management");
+        LOGI("Testing multiple apps management");
         
         MinimalTestApp1Data.name = "TestApp3";
         MinimalTestApp2Data.name = "TestApp4";
@@ -328,14 +324,14 @@ private:
         auto foreground_app = _app_manager.GetForegroundApp();
         TEST_ASSERT(foreground_app == app2.get());
         
-        SYSTEM_APP_LOG_INFO("Multiple apps management test passed");
+        LOGI("Multiple apps management test passed");
 
         _app_manager.DestroyAllApps();
         return TestResult::kPass;
     }
 
     TestResult TestAppLifecycle() {
-        SYSTEM_APP_LOG_INFO("Testing app lifecycle");
+        LOGI("Testing app lifecycle");
         
         auto test_app = std::make_unique<MinimalTestApp1>(MinimalTestApp5Data);
         
@@ -358,7 +354,7 @@ private:
         // 验证应用不再运行
         TEST_ASSERT(!_app_manager.IsAppRunning(test_app.get()));
         
-        SYSTEM_APP_LOG_INFO("App lifecycle test passed");
+        LOGI("App lifecycle test passed");
         return TestResult::kPass;
     }
 

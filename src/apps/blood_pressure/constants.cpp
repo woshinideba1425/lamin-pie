@@ -51,5 +51,5 @@ void DataProvider::putStaticData(JsonDocument userdata)
 {
   _height = userdata["height"];
   _weight = userdata["weight"];
-  ESP_LOGI("BP_TASK", "height:%d, weight:%d", _height, _weight);
+  LOGI("BP_TASK", "height:%d, weight:%d", _height, _weight);
 }

@@ -24,7 +24,7 @@ Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Lam
     // 使用外部提供的组件
     _core_event = event::LaminPie_EventDispatcher::Create();
     
-    SYSTEM_CORE_LOG_INFO("Core framework initialized with external components");
+    LOGI("Core framework initialized with external components");
 }
 
 Laminpie_Core_Framework::~Laminpie_Core_Framework(void)
@@ -36,14 +36,14 @@ Laminpie_Core_Framework::~Laminpie_Core_Framework(void)
     
     _core_event.reset();
     
-    SYSTEM_CORE_LOG_INFO("Core framework destroyed");
+    LOGI("Core framework destroyed");
 }
 
 Laminpie_Core_Framework &Laminpie_Core_Framework::GetInstance(void)
 {
     static Laminpie_Core_Framework* instance = nullptr;
     if (instance == nullptr) {
-        SYSTEM_CORE_LOG_ERROR("Core framework not initialized. Call SetInstance first.");
+        LOGE("Core framework not initialized. Call SetInstance first.");
         throw std::runtime_error("Core framework not initialized");
     }
     return *instance;
@@ -53,46 +53,46 @@ void Laminpie_Core_Framework::SetInstance(Laminpie_Core_Framework* instance)
 {
     static Laminpie_Core_Framework* static_instance = nullptr;
     static_instance = instance;
-    SYSTEM_CORE_LOG_INFO("Core framework instance set");
+    LOGI("Core framework instance set");
 }
 
 bool Laminpie_Core_Framework::setTouchDevice(lv_indev_t *touch) const
 {
     if (touch == nullptr) {
-        SYSTEM_CORE_LOG_ERROR("Touch device is null");
+        LOGE("Touch device is null");
         return false;
     }
     
     _touch_device = touch;
-    SYSTEM_CORE_LOG_INFO("Touch device set successfully");
+    LOGI("Touch device set successfully");
     return true;
 }
 
 bool Laminpie_Core_Framework::registerDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const
 {
     if (callback == nullptr) {
-        SYSTEM_CORE_LOG_ERROR("Date update callback is null");
+        LOGE("Date update callback is null");
         return false;
     }
     
-    SYSTEM_CORE_LOG_INFO("Date update event callback registered");
+    LOGI("Date update event callback registered");
     return true;
 }
 
 bool Laminpie_Core_Framework::unregisterDateUpdateEventCallback(lv_event_cb_t callback, void *user_data) const
 {
     if (callback == nullptr) {
-        SYSTEM_CORE_LOG_ERROR("Date update callback is null");
+        LOGE("Date update callback is null");
         return false;
     }
     
-    SYSTEM_CORE_LOG_INFO("Date update event callback unregistered");
+    LOGI("Date update event callback unregistered");
     return true;
 }
 
 bool Laminpie_Core_Framework::sendDataUpdateEvent(void *param) const
 {
-    SYSTEM_CORE_LOG_DEBUG("Sending data update event");
+    LOGD("Sending data update event");
     return true;
 }
 

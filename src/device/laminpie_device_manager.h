@@ -107,31 +107,31 @@ private:
 
 #define bus_register(bus_name, ...) \
     static bool bus_register_##bus_name = []() { \
-        ESP_LOGE("module_reg", "Registering bus: %s", #bus_name); \
+        LOGE("module_reg", "Registering bus: %s", #bus_name); \
         auto bus = std::make_shared<bus_name>(__VA_ARGS__); \
         bool result = DeviceManager::getInstance().registerBus(bus); \
         if (result) { \
-            ESP_LOGI("module_reg", "bus %s register success", #bus_name); \
+            LOGI("module_reg", "bus %s register success", #bus_name); \
         } else { \
-            ESP_LOGE("module_reg", "bus %s register failed", #bus_name); \
+            LOGE("module_reg", "bus %s register failed", #bus_name); \
         } \
         return result; \
     }();
 
 #define module_register(module_name, bus_name) \
     static bool module_register_##module_name = []() { \
-        ESP_LOGI("module_reg", "register module: %s, bus: %s", #module_name, #bus_name); \
+        LOGI("module_reg", "register module: %s, bus: %s", #module_name, #bus_name); \
         auto bus = DeviceManager::getInstance().getBus(#bus_name); \
         if (!bus) { \
-            ESP_LOGW("module_reg", "bus %s not found, module %s register failed", #bus_name, #module_name); \
+            LOGW("module_reg", "bus %s not found, module %s register failed", #bus_name, #module_name); \
             return false; \
         } \
         auto driver = std::make_shared<module_name>(bus); \
         bool result = DeviceManager::getInstance().registerDriver(driver); \
         if (result) { \
-            ESP_LOGI("module_reg", "module %s register success", #module_name); \
+            LOGI("module_reg", "module %s register success", #module_name); \
         } else { \
-            ESP_LOGE("module_reg", "module %s register failed", #module_name); \
+            LOGE("module_reg", "module %s register failed", #module_name); \
         } \
         return result; \
     }();

@@ -32,10 +32,10 @@ namespace LAMINATEPIE
 
             eeMLX90640 = static_cast<uint16_t*>(heap_caps_malloc(sizeof(uint16_t) * 832,MALLOC_CAP_SPIRAM));
             status = m640->MLX90640_DumpEE(m640->get_i2c_addr(), eeMLX90640);
-            if (status != 0) ESP_LOGW(TAG,"Failed to load system parameters:%d",status);
+            if (status != 0) LOGW(TAG,"Failed to load system parameters:%d",status);
             status = m640->MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
             if (status != 0) {
-                ESP_LOGW(TAG,"Parameter extraction failed,erro:%d",status);
+                LOGW(TAG,"Parameter extraction failed,erro:%d",status);
                 isexdevcie = false;
             }
             // Set refresh rate
@@ -105,7 +105,7 @@ namespace LAMINATEPIE
                 
             }
             uint32_t duration = millis() - start;  // 计算整个 taskLoop 的耗时
-            ESP_LOGD(TAG, "taskLoop() took %d ms", duration);
+            LOGD(TAG, "taskLoop() took %d ms", duration);
         }
 
         void InfraredApp::onRunningBG()
@@ -133,7 +133,7 @@ namespace LAMINATEPIE
             }
             //   if(millis() - fps.millis > 10000 ){
             //         fps.fps = fps.fps_cnt / 10.0f;  // 计算过去10秒的FPS
-            //         ESP_LOGD(TAG, "fps : %.2f", fps.fps);  // 输出FPS
+            //         LOGD(TAG, "fps : %.2f", fps.fps);  // 输出FPS
             //         fps.millis = millis();  // 更新FPS时间戳
             //         fps.fps_cnt = 0;  // 重置帧计数
             //   }
@@ -148,7 +148,7 @@ namespace LAMINATEPIE
             uint8_t dummyData = 0;
             
             uint8_t infrared_add = update->infrared.get_i2c_addr();
-            ESP_LOGD(TAG, "Infrared address: 0x%02X", infrared_add);
+            LOGD(TAG, "Infrared address: 0x%02X", infrared_add);
             espRc = update->i2cManager.writeToDevice(infrared_add,&dummyData,1);
             if (espRc != ESP_OK){
                 static const char* btns[] = {""};
@@ -157,7 +157,7 @@ namespace LAMINATEPIE
                 lv_obj_add_event_cb(mbox1, mbox_event_handler, LV_EVENT_DELETE, _framework);
                 return false;
             }else{
-                ESP_LOGD(TAG,"infrared device found");
+                LOGD(TAG,"infrared device found");
                 isexdevcie = true;
             }
             return true;
@@ -171,7 +171,7 @@ namespace LAMINATEPIE
                 int status = m640->MLX90640_GetFrameData(m640->get_i2c_addr(), mlx90640Frame);
                 if (status < 0)
                 {
-                    ESP_LOGW(TAG, "GetFrame Error: %d", status);
+                    LOGW(TAG, "GetFrame Error: %d", status);
                 }
 
                 float vdd = m640->MLX90640_GetVdd(mlx90640Frame, &mlx90640);
@@ -185,7 +185,7 @@ namespace LAMINATEPIE
             heap_caps_free(mlx90640Frame);
 
             uint32_t duration = millis() - start;  // 计算花费时间
-            ESP_LOGD(TAG, "readTempValues() took %d ms", duration);
+            LOGD(TAG, "readTempValues() took %d ms", duration);
         }
 
         void InfraredApp::interpolate() {
@@ -230,7 +230,7 @@ namespace LAMINATEPIE
                 }
             }
             uint32_t duration = millis() - start;  // 计算花费时间
-            ESP_LOGD(TAG, "prepra_fb_data() took %d ms", duration);
+            LOGD(TAG, "prepra_fb_data() took %d ms", duration);
 
             #elif !INTERPOLATE
                 for (ids.y=0; ids.y<24; ids.y++) {

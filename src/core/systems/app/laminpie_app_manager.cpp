@@ -13,7 +13,7 @@ Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework &f
   _app_manager_data(data),
   _foreground_app(nullptr)
 {
-    SYSTEM_APP_LOG_DEBUG("App manager initialized");
+    LOGD("App manager initialized");
 
     // 注册关闭事件监听器
     _close_event_listener_id = _event_dispatcher.addEventListener<App_EventData_t>(
@@ -26,31 +26,31 @@ Laminpie_App_Manager::Laminpie_App_Manager(framework::Laminpie_Core_Framework &f
 
 Laminpie_App_Manager::~Laminpie_App_Manager()
 {
-    SYSTEM_APP_LOG_INFO("App manager destroyed");
+    LOGI("App manager destroyed");
 }
 
 bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
 {
-    SYSTEM_APP_LOG_INFO("Starting app: %s", app->GetName().c_str());
+    LOGI("Starting app: %s", app->GetName().c_str());
     if(!app){
-        SYSTEM_APP_LOG_ERROR("StartApp: app is null");
+        LOGE("StartApp: app is null");
         return false;
     }
 
     if(!QueryAppIsInstall(app)){
-        SYSTEM_APP_LOG_ERROR("StartApp: app not regitsted");
+        LOGE("StartApp: app not regitsted");
         return false;
     }
 
     if(IsAppRunning(app)){
         
-        SYSTEM_APP_LOG_ERROR("StartApp: app is already running: %s", app->GetName().c_str());
+        LOGE("StartApp: app is already running: %s", app->GetName().c_str());
         return false;
     }
 
 
     if(_running_apps.size() >= _app_manager_data.app.max_running_num){
-        SYSTEM_APP_LOG_ERROR("StartApp: max running num reached: %s", app->GetName().c_str());
+        LOGE("StartApp: max running num reached: %s", app->GetName().c_str());
         return false;
     }
 
@@ -60,8 +60,9 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
     // 如果应用允许后台运行，则检查是否已经存在，如果存在则恢复
     if(app->GetCoreActiveData().flags.enable_running_bg) {
         for(auto &entry : _running_apps){
-            if(entry.app == app){
+            if(entry.app == app && entry.app->GetName() == app->GetName() && entry.app->GetId() == app->GetId()){
                if(entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) {
+                LOGI("App manager resumed app: %s", app->GetName().c_str());
                 entry.app_state = Laminpie_App_Event_Type::kApp_Status_Resumed;
                 break;
                }
@@ -94,27 +95,27 @@ void Laminpie_App_Manager::SetForegroundApp(Laminpie_App_Base* app)
 void Laminpie_App_Manager::NotFoundAppAlert(bool is_found)
 {
     if(!is_found){
-        SYSTEM_APP_LOG_ERROR("Running apps: %d", _running_apps.size());
+        LOGE("Running apps: %d", _running_apps.size());
         for(auto &entry : _running_apps){
-            SYSTEM_APP_LOG_ERROR("Running app ptr: %p", (void*)entry.app);
-            SYSTEM_APP_LOG_ERROR("Running app state: %d", static_cast<int>(entry.app_state));
+            LOGE("Running app ptr: %p", (void*)entry.app);
+            LOGE("Running app state: %d", static_cast<int>(entry.app_state));
         }
     }
 }
 bool Laminpie_App_Manager::MoveAppToBackground(Laminpie_App_Base* app)
 {
     if(!app){
-        SYSTEM_APP_LOG_ERROR("MoveAppToBackground: app is null");
+        LOGE("MoveAppToBackground: app is null");
         return false;
     }
-    SYSTEM_APP_LOG_INFO("Moving app to background: %p", (void*)app);
+    LOGI("Moving app to background: %p", (void*)app);
     bool is_found = false;
     for(auto &entry : _running_apps){
         if(entry.app == app){
             if(entry.app->GetCoreActiveData().flags.enable_running_bg){
                 ProcessStateTransition(entry, Laminpie_App_Event_Type::kApp_Status_RunningBg);
             }else{
-                SYSTEM_APP_LOG_ERROR("MoveAppToBackground: app is not allow to run bg: %s", app->GetName().c_str());
+                LOGE("MoveAppToBackground: app is not allow to run bg: %s", app->GetName().c_str());
                 return false;
             }
             is_found = true;
@@ -130,10 +131,10 @@ bool Laminpie_App_Manager::MoveAppToBackground(Laminpie_App_Base* app)
 bool Laminpie_App_Manager::PauseApp(Laminpie_App_Base* app)
 {
     if(!app){
-        SYSTEM_APP_LOG_ERROR("PauseApp: app is null");
+        LOGE("PauseApp: app is null");
         return false;
     }
-    SYSTEM_APP_LOG_INFO("Pausing app: %p", (void*)app);
+    LOGI("Pausing app: %p", (void*)app);
     bool is_found = false;
     for(auto &entry : _running_apps){
         if(entry.app == app){
@@ -151,10 +152,10 @@ bool Laminpie_App_Manager::PauseApp(Laminpie_App_Base* app)
 bool Laminpie_App_Manager::DestroyApp(Laminpie_App_Base* app)
 {
     if(!app){
-        SYSTEM_APP_LOG_ERROR("DestroyApp: app is null");
+        LOGE("DestroyApp: app is null");
         return false;
     }
-    SYSTEM_APP_LOG_INFO("Destroying app: %p", (void*)app);
+    LOGI("Destroying app: %p", (void*)app);
     bool is_found = false;
     for(auto &entry : _running_apps){
         if(entry.app == app){
@@ -170,7 +171,7 @@ bool Laminpie_App_Manager::DestroyApp(Laminpie_App_Base* app)
 }
 
 void Laminpie_App_Manager::DestroyAllApps() {
-    SYSTEM_APP_LOG_INFO("Destroying all apps");
+    LOGI("Destroying all apps");
     std::vector<Laminpie_App_Base*> to_close;
     to_close.reserve(_running_apps.size());
     for(const auto &e : _running_apps){ to_close.push_back(e.app); }
@@ -192,10 +193,10 @@ void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
             if(_running_bg_cycle % 4 == 0){
                 if(!entry.app->OnRunningBG()){
                     entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
-                    SYSTEM_APP_LOG_DEBUG("Background app executed: %s", entry.app->GetName().c_str());
+                    LOGD("Background app executed: %s", entry.app->GetName().c_str());
                 }else{
                     entry.app_state = Laminpie_App_Event_Type::kApp_Status_Paused;
-                    SYSTEM_APP_LOG_DEBUG("Background app executed: %s", entry.app->GetName().c_str());
+                    LOGD("Background app executed: %s", entry.app->GetName().c_str());
                 }
             }
         }
@@ -207,12 +208,12 @@ void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
 
 void Laminpie_App_Manager::ProcessAppCloseEvent(const App_EventData_t& event)
 {
-    SYSTEM_APP_LOG_INFO("Received close event for app ID: %d", event.id);
+    LOGI("Received close event for app ID: %d", event.id);
     
     // 找到对应的应用并设置状态为关闭
     for (auto& entry : _running_apps) {
         if (entry.app->GetId() == event.id) {
-            SYSTEM_APP_LOG_INFO("Setting app to closed state: %p", (void*)entry.app);
+            LOGI("Setting app to closed state: %p", (void*)entry.app);
             entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
             _running_apps.erase(std::remove_if(_running_apps.begin(), _running_apps.end(), 
                 [&entry](const Laminpie_AppEntry& e) { return e.app == entry.app; }), 
@@ -224,16 +225,16 @@ void Laminpie_App_Manager::ProcessAppCloseEvent(const App_EventData_t& event)
 
 void Laminpie_App_Manager::Update()
 {
-    SYSTEM_APP_LOG_DEBUG("Updating app manager with %zu running apps", _running_apps.size());
+    LOGD("Updating app manager with %zu running apps", _running_apps.size());
     
     for(auto iter = _running_apps.begin(); iter != _running_apps.end();){
         auto& entry = *iter;
         Laminpie_App_Event_Type current_app_status = entry.app->GetStatus();
-        SYSTEM_APP_LOG_DEBUG("App:%p, id: %d, status:%d", (void*)entry.app, entry.app->GetId(), static_cast<int>(entry.app->GetStatus()));
+        LOGD("App:%p, id: %d, status:%d", (void*)entry.app, entry.app->GetId(), static_cast<int>(entry.app->GetStatus()));
         
         // 检查状态是否发生变化
         if (entry.app_state != current_app_status) {
-            SYSTEM_APP_LOG_INFO("App state changed: %p [%d -> %d]", 
+            LOGI("App state changed: %p [%d -> %d]", 
                                (void*)entry.app, 
                                static_cast<int>(entry.app_state), 
                                static_cast<int>(current_app_status));
@@ -293,7 +294,7 @@ void Laminpie_App_Manager::ProcessStateProgressionLogic(Laminpie_AppEntry& entry
             _foreground_app = entry.app;
 
             _update_first_element = true;
-            SYSTEM_APP_LOG_INFO("App became foreground: %s", entry.app->GetName().c_str());
+            LOGI("App became foreground: %s", entry.app->GetName().c_str());
         }
     } else if (entry.app_state == Laminpie_App_Event_Type::kApp_Status_RunningBg) { // 后台运行状态
         if(_foreground_app == entry.app){
@@ -308,7 +309,7 @@ void Laminpie_App_Manager::ProcessStateProgressionLogic(Laminpie_AppEntry& entry
 }
 bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Laminpie_App_Event_Type new_state)
 {
-    SYSTEM_APP_LOG_INFO("Processing state transition: %p [%d -> %d]", 
+    LOGI("Processing state transition: %p [%d -> %d]", 
                         (void*)entry.app, 
                         static_cast<int>(entry.app_state), 
                         static_cast<int>(new_state));
@@ -331,7 +332,7 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
             // onRunning: 前台运行状态
 
             if (!entry.app->OnLoop()) {
-                SYSTEM_APP_LOG_WARN("App loop failed, transitioning to pause: %p", (void*)entry.app);
+                LOGW("App loop failed, transitioning to pause: %p", (void*)entry.app);
                 // 根据流程图，应该检查 should destroy?
                 if (ShouldDestroyApp(entry.app)) {
                     entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
@@ -362,7 +363,7 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
             break;
             
         default:
-            SYSTEM_APP_LOG_ERROR("Unknown state: %d for app: %p", 
+            LOGE("Unknown state: %d for app: %p", 
                                 static_cast<int>(new_state), 
                                 (void*)entry.app);
             return false;
@@ -373,7 +374,7 @@ bool Laminpie_App_Manager::ProcessStateTransition(Laminpie_AppEntry& entry, Lami
 
 bool Laminpie_App_Manager::IsAppRunning(Laminpie_App_Base* app) const
 {
-    SYSTEM_APP_LOG_INFO("Checking if app is running: %s", app->GetName().c_str());
+    LOGI("Checking if app is running: %s", app->GetName().c_str());
     for(auto &entry : _running_apps){
         if(entry.app == app && entry.app->GetName() == app->GetName() && entry.app->GetId() == app->GetId()){
             if(entry.app_state  == Laminpie_App_Event_Type::kApp_Status_Paused){
@@ -387,7 +388,7 @@ bool Laminpie_App_Manager::IsAppRunning(Laminpie_App_Base* app) const
 
 Laminpie_App_Base* Laminpie_App_Manager::GetForegroundApp() const
 {
-    SYSTEM_APP_LOG_INFO("Getting foreground app");
+    LOGI("Getting foreground app");
     return _foreground_app;
 }
 
@@ -403,17 +404,17 @@ bool Laminpie_App_Manager::ShouldDestroyApp(Laminpie_App_Base* app) const
 
 bool Laminpie_App_Manager::IsForegroundAppRunning() const
 {
-    SYSTEM_APP_LOG_INFO("Checking if foreground app is running");
+    LOGI("Checking if foreground app is running");
     return _foreground_app != nullptr;
 }
 
 bool Laminpie_App_Manager::ProcessAppCreate(Laminpie_App_Base *app)
 {
-    SYSTEM_APP_LOG_INFO("Processing app run: %s", app->GetName().c_str());
+    LOGI("Processing app run: %s", app->GetName().c_str());
     CheckFalseReturn(app->ResetRecordResource(), false, "Reset record resource failed");
     CheckFalseReturn(app->StartRecordResource(), false, "Start record resource failed");
     if(!app->OnCreate()){
-        SYSTEM_APP_LOG_ERROR("App create failed: %s", app->GetName().c_str());
+        LOGE("App create failed: %s", app->GetName().c_str());
         CheckFalseReturn(app->ProcessClose(true), false, "Close app failed");
         CheckFalseReturn(ProcessAppClose(app), false, "Close app failed");
         return false;
@@ -426,10 +427,10 @@ bool Laminpie_App_Manager::ProcessAppCreate(Laminpie_App_Base *app)
 
 bool Laminpie_App_Manager::ProcessAppResume(Laminpie_App_Base *app)
 {
-    SYSTEM_APP_LOG_INFO("Processing app resume: %s", app->GetName().c_str());
+    LOGI("Processing app resume: %s", app->GetName().c_str());
     CheckFalseReturn(app->StartRecordResource(), false, "Start record resource failed");
     if(!app->OnResume()){
-        SYSTEM_APP_LOG_ERROR("App resume failed: %s", app->GetName().c_str());
+        LOGE("App resume failed: %s", app->GetName().c_str());
         CheckFalseReturn(app->ProcessClose(true), false, "Close app failed");
         CheckFalseReturn(ProcessAppClose(app), false, "Close app failed");
         return false;
@@ -442,11 +443,11 @@ bool Laminpie_App_Manager::ProcessAppResume(Laminpie_App_Base *app)
 
 bool Laminpie_App_Manager::ProcessAppPause(Laminpie_App_Base *app)
 {
-    SYSTEM_APP_LOG_INFO("Processing app pause: %s", app->GetName().c_str());
+    LOGI("Processing app pause: %s", app->GetName().c_str());
     CheckFalseReturn(app->ProcessPause(), false, "App process pause failed");
     if(_app_manager_data.flags.enable_app_save_snapshot) {
         if(!SaveAppSnapshot(app)) {
-            SYSTEM_MANAGER_LOG_ERROR("Save app snapshot failed");
+            LOGE("Save app snapshot failed");
         }
     }
 
@@ -469,20 +470,20 @@ bool Laminpie_App_Manager::ProcessAppClose(Laminpie_App_Base *app){
 
 void Laminpie_App_Manager::ResetActiveApp()
 {
-    SYSTEM_APP_LOG_INFO("Resetting active app");
+    LOGI("Resetting active app");
     _foreground_app = nullptr;
 }
 
 bool Laminpie_App_Manager::SaveAppSnapshot(Laminpie_App_Base *app)
 {
-    SYSTEM_APP_LOG_INFO("Saving app snapshot: %s", app->GetName().c_str());
+    LOGI("Saving app snapshot: %s", app->GetName().c_str());
     // TODO: 实现应用快照保存逻辑
     return true;
 }
 
 bool Laminpie_App_Manager::ReleaseAppSnapshot(Laminpie_App_Base *app)
 {
-    SYSTEM_APP_LOG_INFO("Releasing app snapshot: %s", app->GetName().c_str());
+    LOGI("Releasing app snapshot: %s", app->GetName().c_str());
     // TODO: 实现应用快照释放逻辑
     return true;
 }

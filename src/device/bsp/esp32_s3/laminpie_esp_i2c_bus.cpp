@@ -23,7 +23,7 @@ EspI2cBus::~EspI2cBus() {
 }
 
 bool EspI2cBus::initialize() {
-    ESP_LOGI(TAG, "Initializing I2C on SDA: %d, SCL: %d with frequency: %lu Hz", sda_pin_, scl_pin_, (unsigned long)frequency_);
+    LOGI(TAG, "Initializing I2C on SDA: %d, SCL: %d with frequency: %lu Hz", sda_pin_, scl_pin_, (unsigned long)frequency_);
 
     esp_err_t ret;
         i2c_master_bus_config_t i2c_bus_cfg = {
@@ -42,7 +42,7 @@ bool EspI2cBus::initialize() {
     i2c_master_bus_handle_t raw_bus_handle = nullptr;
     ret = i2c_new_master_bus(&i2c_bus_cfg, &raw_bus_handle);
     if(ret != ESP_OK){
-        ESP_LOGE(TAG, "Failed to initialize I2C bus: %d", ret);
+        LOGE(TAG, "Failed to initialize I2C bus: %d", ret);
         return false;
     }
     bus_handle_.reset(raw_bus_handle);
@@ -65,7 +65,7 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
             ++addr_it;
         } else {
             // 设备已移除，从设备句柄映射中删除
-            ESP_LOGI(TAG, "Device removed from address: 0x%02X", addr);
+            LOGI(TAG, "Device removed from address: 0x%02X", addr);
             dev_handle_map_.erase(addr);
             addr_it = device_addr_list_.erase(addr_it);
         }
@@ -92,7 +92,7 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
         
         esp_err_t ret = i2c_master_probe(bus_handle_.get(), addr, 100);
         if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Found new device at common address: 0x%02X", addr);
+            LOGI(TAG, "Found new device at common address: 0x%02X", addr);
             current_devices.push_back(addr);
             device_addr_list_.push_back(addr);
         }
@@ -112,7 +112,7 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
             
             esp_err_t ret = i2c_master_probe(bus_handle_.get(), addr, 100);
             if (ret == ESP_OK) {
-                ESP_LOGI(TAG, "Found new device at address: 0x%02X", addr);
+                LOGI(TAG, "Found new device at address: 0x%02X", addr);
                 current_devices.push_back(addr);
                 device_addr_list_.push_back(addr);
             }
@@ -134,7 +134,7 @@ std::vector<DeviceIdentifier> EspI2cBus::scanDevices() {
             i2c_master_dev_handle_t raw_dev_handle = nullptr;
             esp_err_t ret = i2c_master_bus_add_device(bus_handle_.get(), &dev_cfg, &raw_dev_handle);
             if (ret != ESP_OK) {
-                ESP_LOGE(TAG, "Failed to add device to bus: %d", ret);
+                LOGE(TAG, "Failed to add device to bus: %d", ret);
                 continue;
             }
             
@@ -164,19 +164,19 @@ std::string EspI2cBus::getName() const {
 esp_err_t EspI2cBus::write_i2c(uint16_t deviceAddr, const uint8_t* data, size_t length) {
     auto it = dev_handle_map_.find(deviceAddr);
     if(it == dev_handle_map_.end()){
-        ESP_LOGE(TAG, "Device handle not found for address: 0x%02X", deviceAddr);
+        LOGE(TAG, "Device handle not found for address: 0x%02X", deviceAddr);
         return ESP_ERR_NOT_FOUND;
     }
     
     BufferView view = addToWriteBuffer(deviceAddr, data, length);
     if(view.empty()){
-        ESP_LOGE(TAG, "Failed to add data to write buffer");
+        LOGE(TAG, "Failed to add data to write buffer");
         return ESP_ERR_NO_MEM;
     }
     
     esp_err_t ret = i2c_master_transmit(it->second.get(), view.data(), view.size(), 100);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "i2c_master_transmit failed: %s (0x%x)", esp_err_to_name(ret), ret);
+        LOGE(TAG, "i2c_master_transmit failed: %s (0x%x)", esp_err_to_name(ret), ret);
     }
     
     return ret;
@@ -220,7 +220,7 @@ esp_err_t EspI2cBus::writeRead_i2c(uint16_t deviceAddr, const uint8_t* writeData
 bool EspI2cBus::write(uint16_t deviceAddr, const uint8_t* data, size_t length) {
     esp_err_t ret = write_i2c(deviceAddr, data, length);
     if(ret != ESP_OK){
-        ESP_LOGE(TAG, "Failed to write data to device: %s (%d)", esp_err_to_name(ret), ret);
+        LOGE(TAG, "Failed to write data to device: %s (%d)", esp_err_to_name(ret), ret);
         return false;
     }
     return true;
@@ -229,7 +229,7 @@ bool EspI2cBus::write(uint16_t deviceAddr, const uint8_t* data, size_t length) {
 bool EspI2cBus::read(uint16_t deviceAddr, uint8_t* data, size_t length) {
     esp_err_t ret = read_i2c(deviceAddr, data, length);
     if(ret != ESP_OK){
-        ESP_LOGE(TAG, "Failed to read data from device: %s (%d)", esp_err_to_name(ret), ret);
+        LOGE(TAG, "Failed to read data from device: %s (%d)", esp_err_to_name(ret), ret);
         return false;
     }
     return true;
@@ -238,7 +238,7 @@ bool EspI2cBus::read(uint16_t deviceAddr, uint8_t* data, size_t length) {
 bool EspI2cBus::writeRead(uint16_t deviceAddr, const uint8_t* writeData, size_t writeLen, uint8_t* readData, size_t readLen) {
     esp_err_t ret = writeRead_i2c(deviceAddr, writeData, writeLen, readData, readLen);
     if(ret != ESP_OK){
-        ESP_LOGE(TAG, "Failed to write and read data from device: %s (%d)", esp_err_to_name(ret), ret);
+        LOGE(TAG, "Failed to write and read data from device: %s (%d)", esp_err_to_name(ret), ret);
         return false;
     }
     return true;
@@ -277,7 +277,7 @@ BusTransferResult EspI2cBus::executeCommand(const I2CBusCommand& command) {
         case I2CBusCommand::TransferType::PROBE_ONLY: {
             ret = i2c_master_probe(bus_handle_.get(), command.deviceAddress, 100);
             if(ret == ESP_OK){
-                ESP_LOGI(TAG, "Device found at address: 0x%02X", command.deviceAddress);
+                LOGI(TAG, "Device found at address: 0x%02X", command.deviceAddress);
                 DeviceIdentifier id(DeviceIdentifier::BUS_I2C, std::to_string(command.deviceAddress)); 
                 id.i2c.address = command.deviceAddress; 
                 i2c_device_config_t dev_cfg = {
@@ -288,11 +288,11 @@ BusTransferResult EspI2cBus::executeCommand(const I2CBusCommand& command) {
                 i2c_master_dev_handle_t raw_dev_handle = nullptr;
                 // ret = i2c_master_bus_add_device(bus_handle_.get(), &dev_cfg, &raw_dev_handle);
                 // if(ret != ESP_OK){
-                //     ESP_LOGE(TAG, "Failed to add device to bus: %d", ret);
+                //     LOGE(TAG, "Failed to add device to bus: %d", ret);
                 // }
                 // dev_handle_map_[command.deviceAddress] = std::unique_ptr<i2c_master_dev_t, I2cDevDeleter>(raw_dev_handle);
             }else{
-                ESP_LOGE(TAG, "Device not found at address: 0x%02X", command.deviceAddress);
+                LOGE(TAG, "Device not found at address: 0x%02X", command.deviceAddress);
             }
             break;
         }

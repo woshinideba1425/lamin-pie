@@ -10,7 +10,7 @@ using namespace laminpie::utils;
 namespace laminpie::system::app {
     Laminpie_App_Register::Laminpie_App_Register(framework::Laminpie_Core_Framework &framework) 
     : _framework(framework), _navigation(&_framework.GetAppNavigation()) {
-        SYSTEM_APP_LOG_DEBUG("App register initialized");
+        LOGD("App register initialized");
     }
 
     int Laminpie_App_Register::Install(Laminpie_App_Base* app, void* userData) {
@@ -32,7 +32,7 @@ namespace laminpie::system::app {
         if (ret) {
             auto it = _id_installed_app_map.find(app->_id);
             if (it != _id_installed_app_map.end()) {
-                SYSTEM_APP_LOG_INFO("App inserted into hash table: %s (ID: %d)", app->GetName().c_str(), app->_id);
+                LOGI("App inserted into hash table: %s (ID: %d)", app->GetName().c_str(), app->_id);
             }
         }
         
@@ -45,7 +45,7 @@ namespace laminpie::system::app {
 
         ret = home.ProcessAppInstall(app);
         if (!ret){
-            SYSTEM_APP_LOG_ERROR("Home process app install failed: %s", app->GetName().c_str());
+            LOGE("Home process app install failed: %s", app->GetName().c_str());
             return -1;
         }
 
@@ -55,10 +55,10 @@ namespace laminpie::system::app {
 
         if (!ret){
             if (home_process_app_installed && !home.ProcessAppUninstall(app)){
-                SYSTEM_APP_LOG_ERROR("Home process app uninstall failed");
+                LOGE("Home process app uninstall failed");
             }
             if (app_installed && !app->ProcessUninstall()){
-                SYSTEM_APP_LOG_ERROR("App uninstall failed");
+                LOGE("App uninstall failed");
             }
             _id_installed_app_map.erase(app->_id);
             return -1;
@@ -81,7 +81,7 @@ namespace laminpie::system::app {
         CheckNullAndReturn(app,false,"Invalid app");
         app_id = app->_id;
 
-        SYSTEM_APP_LOG_DEBUG("Uninstall App(%d)", app_id);
+        LOGD("Uninstall App(%d)", app_id);
 
         auto it = _id_installed_app_map.begin();
         for (; it != _id_installed_app_map.end(); it++){
@@ -95,7 +95,7 @@ namespace laminpie::system::app {
 
         ret = app->ProcessUninstall();
         if(!ret){
-            SYSTEM_APP_LOG_ERROR("App uninstall failed");
+            LOGE("App uninstall failed");
         }
 
         CheckFalseReturn(_id_installed_app_map.erase(app_id) > 0, false, "Remove app failed");
@@ -112,7 +112,7 @@ namespace laminpie::system::app {
     bool Laminpie_App_Register::Uninstall(int id)
     {
         Laminpie_App_Base *app = nullptr;
-        SYSTEM_APP_LOG_DEBUG("Uninstall App(%d)", id);
+        LOGD("Uninstall App(%d)", id);
 
         app = GetInstalledApp(id);
         CheckNullAndReturn(app, false, "Get installed app failed");
@@ -124,7 +124,6 @@ namespace laminpie::system::app {
 
     Laminpie_App_Base *Laminpie_App_Register::GetInstalledApp(int id)
     {
-        LP_LOG_TRACE_GUARD_WITH_THIS("laminpie.app");
         auto it = _id_installed_app_map.find(id);
         if(it != _id_installed_app_map.end()){
             return it->second;
@@ -152,7 +151,7 @@ namespace laminpie::system::app {
         CheckNullAndReturn(app, false, "Invalid app");
         const int app_id = app->GetId();
         if (app_id < Laminpie_App_ID_Min) {
-            SYSTEM_APP_LOG_DEBUG("App(%s: %d) not installed", app->GetName().c_str(), app_id);
+            LOGD("App(%s: %d) not installed", app->GetName().c_str(), app_id);
             return false;
         }
 

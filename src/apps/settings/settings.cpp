@@ -67,7 +67,7 @@ namespace LAMINATEPIE {
             time_buffer.sec = 0;
 
 
-            ESP_LOGI(TAG,"set time to: %d:%d:%d %d,%d/%d/%d\n", 
+            LOGI(TAG,"set time to: %d:%d:%d %d,%d/%d/%d\n", 
                     time_buffer.hour,
                     time_buffer.min,
                     time_buffer.sec,
@@ -281,7 +281,7 @@ namespace LAMINATEPIE {
 
         void Settings::onRunningBG()
         {
-            ESP_LOGI(TAG,"[%s] onRunningBG\n", getAppName().c_str());
+            LOGI(TAG,"[%s] onRunningBG\n", getAppName().c_str());
         }
 
 

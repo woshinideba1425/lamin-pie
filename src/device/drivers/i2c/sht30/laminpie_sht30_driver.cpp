@@ -45,15 +45,15 @@ bool Sht30Driver::probeDevice(const DeviceIdentifier& identifier) const {
     uint16_t deviceAddress = identifier.getI2cAddress();
     // 检查设备是否支持
     if (!identifier.isI2cDevice()) {
-        ESP_LOGI(TAG, "Device is not an I2c device");
+        LOGI(TAG, "Device is not an I2c device");
         return false;
     }
     // 检查设备地址是否有效
     if (identifier.getI2cAddress() == 0 || identifier.getI2cAddress() > 127) {
-        ESP_LOGI(TAG, "Device address is invalid");
+        LOGI(TAG, "Device address is invalid");
         return false;
     }
-    ESP_LOGI(TAG, "deviceAddress: 0x%02x", deviceAddress);
+    LOGI(TAG, "deviceAddress: 0x%02x", deviceAddress);
     if (std::find(_supportedDeviceAddress.begin(), _supportedDeviceAddress.end(), deviceAddress) != _supportedDeviceAddress.end()) {
         I2CBusCommand cmd = getI2cBus()->prepareProbeCommand(deviceAddress);
         BusTransferResult result = getI2cBus()->transfer(cmd);
@@ -61,7 +61,7 @@ bool Sht30Driver::probeDevice(const DeviceIdentifier& identifier) const {
             return true;
         }
     }else{
-        ESP_LOGI(TAG, "deviceAddress not in supportedDeviceAddress");
+        LOGI(TAG, "deviceAddress not in supportedDeviceAddress");
     }
     return false;
 }
@@ -69,7 +69,7 @@ bool Sht30Driver::probeDevice(const DeviceIdentifier& identifier) const {
 bool Sht30Driver::setupDevice(std::shared_ptr<DeviceIdentifier> device) {
     // 发送测量命令
     if (!writeSHT30Command(0x2C06)) {
-        ESP_LOGE(TAG, "Failed to send measurement command");
+        LOGE(TAG, "Failed to send measurement command");
         return false;
     }
     
@@ -78,40 +78,40 @@ bool Sht30Driver::setupDevice(std::shared_ptr<DeviceIdentifier> device) {
     
     // 读取初始数据
     if (!updateSensorData()) {
-        ESP_LOGE(TAG, "SHT30 initialization failed");
+        LOGE(TAG, "SHT30 initialization failed");
         return false;
     }
     
-    ESP_LOGI(TAG, "SHT30 initialized successfully");
+    LOGI(TAG, "SHT30 initialized successfully");
     return true;
 }
 
 void Sht30Driver::releaseDevice(std::shared_ptr<DeviceIdentifier> device) {
     // 没有特殊的释放操作
-    ESP_LOGI(TAG, "SHT30 released");
+    LOGI(TAG, "SHT30 released");
 }
 
 bool Sht30Driver::suspend(std::shared_ptr<DeviceIdentifier> device) {
     // SHT30没有特殊的休眠命令，可以考虑停止周期性测量
-    ESP_LOGI(TAG, "SHT30 suspended");
+    LOGI(TAG, "SHT30 suspended");
     return true;
 }
 
 bool Sht30Driver::resume(std::shared_ptr<DeviceIdentifier> device) {
     // 恢复时重新发送测量命令并更新数据
     if (!updateSensorData()) {
-        ESP_LOGE(TAG, "Failed to resume SHT30");
+        LOGE(TAG, "Failed to resume SHT30");
         return false;
     }
     
-    ESP_LOGI(TAG, "SHT30 resumed");
+    LOGI(TAG, "SHT30 resumed");
     return true;
 }
 
 bool Sht30Driver::updateSensorData() {
     // 发送测量命令
     if (!writeSHT30Command(0x2C06)) {
-        ESP_LOGE(TAG, "Failed to send measurement command");
+        LOGE(TAG, "Failed to send measurement command");
         return false;
     }
     
@@ -120,7 +120,7 @@ bool Sht30Driver::updateSensorData() {
     
     // 读取传感器数据
     if (!readSHT30Data()) {
-        ESP_LOGE(TAG, "Failed to read sensor data");
+        LOGE(TAG, "Failed to read sensor data");
         return false;
     }
     
@@ -144,14 +144,14 @@ bool Sht30Driver::writeSHT30Command(uint16_t command) {
 bool Sht30Driver::readSHT30Data() {
     // 读取6字节数据 (温度高字节、温度低字节、温度CRC、湿度高字节、湿度低字节、湿度CRC)
     if (!readDevice(SHT30_ADDR, sensorData, 6)) {
-        ESP_LOGE(TAG, "Failed to read from SHT30");
+        LOGE(TAG, "Failed to read from SHT30");
         return false;
     }
     
     // 验证温度数据的CRC
     uint8_t temp_crc = calculateCRC8(sensorData, 2);
     if (temp_crc != sensorData[2]) {
-        ESP_LOGE(TAG, "Temperature CRC check failed: calculated 0x%02X, received 0x%02X", 
+        LOGE(TAG, "Temperature CRC check failed: calculated 0x%02X, received 0x%02X", 
                  temp_crc, sensorData[2]);
         return false;
     }
@@ -159,7 +159,7 @@ bool Sht30Driver::readSHT30Data() {
     // 验证湿度数据的CRC
     uint8_t hum_crc = calculateCRC8(sensorData + 3, 2);
     if (hum_crc != sensorData[5]) {
-        ESP_LOGE(TAG, "Humidity CRC check failed: calculated 0x%02X, received 0x%02X", 
+        LOGE(TAG, "Humidity CRC check failed: calculated 0x%02X, received 0x%02X", 
                  hum_crc, sensorData[5]);
         return false;
     }
@@ -170,14 +170,14 @@ bool Sht30Driver::readSHT30Data() {
 bool Sht30Driver::resetSHT30() {
     // 发送软复位命令 (0x30A2)
     if (!writeSHT30Command(0x30A2)) {
-        ESP_LOGE(TAG, "Failed to send reset command");
+        LOGE(TAG, "Failed to send reset command");
         return false;
     }
     
     // 等待传感器复位完成
     vTaskDelay(pdMS_TO_TICKS(10));
     
-    ESP_LOGI(TAG, "SHT30 reset successful");
+    LOGI(TAG, "SHT30 reset successful");
     return true;
 }
 
