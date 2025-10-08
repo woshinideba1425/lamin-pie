@@ -23,7 +23,7 @@ class CircularBuffer{
             size_t size = capacity_ * sizeof(T);
             void* ptr = nullptr;
             if (posix_memalign(&ptr, Alignment, size) != 0) {
-                LP_LOG_ERROR("CircularBuffer", "Failed to allocate aligned memory");
+                LOGE("CircularBuffer", "Failed to allocate aligned memory");
                 return;
             }
             aligned_buffer_ = static_cast<T*>(ptr);

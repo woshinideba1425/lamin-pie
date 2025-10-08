@@ -25,12 +25,16 @@
 /** @} */
 
 /**
- * @brief 默认使用标准库线程
+ * @brief 操作系统选择
  * 
- * 可通过编译时定义LAMINPIE_USE_OS宏来覆盖默认选择
+ * 优先使用Kconfig配置，如果没有则使用默认值
  */
 #ifndef LAMINPIE_USE_OS
-#define LAMINPIE_USE_OS LAMINPIE_OS_STD_THREAD
+    #if defined(CONFIG_LAMINPIE_USE_OS_VALUE)
+        #define LAMINPIE_USE_OS CONFIG_LAMINPIE_USE_OS_VALUE
+    #else
+        #define LAMINPIE_USE_OS LAMINPIE_OS_STD_THREAD
+    #endif
 #endif
 
 /**

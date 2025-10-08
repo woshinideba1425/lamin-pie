@@ -337,14 +337,14 @@ public:
     bool ConsignToBoot(Laminpie_Core_Framework &core_framework);
 
 protected:
-	virtual bool InitializeHardware() = 0;
-	virtual bool InitializeBsp() = 0;
-	virtual bool InitializeDrivers() = 0;
-	virtual bool InitializeMiddleware() = 0;
-	virtual bool InitializeSystemServices() = 0;
-	virtual bool LoadResources() = 0;
-	virtual bool InitializeApplication() = 0;
-	virtual bool PostSelfTest(){return true;};
+	virtual BootResult<void> InitializeHardware() = 0;
+	virtual BootResult<void> InitializeBsp() = 0;
+	virtual BootResult<void> InitializeDrivers() = 0;
+	virtual BootResult<void> InitializeMiddleware() = 0;
+	virtual BootResult<void> InitializeSystemServices() = 0;
+	virtual BootResult<void> LoadResources() = 0;
+	virtual BootResult<void> InitializeApplication() = 0;
+	virtual BootResult<void> PostSelfTest(){return BootOk();};
 
 private:
     Laminpie_Boot_Manager(const Laminpie_Boot_Manager &) = delete;
@@ -354,8 +354,8 @@ private:
 	void NotifyError(Laminpie_Boot_Event_Type phase, int err, const std::string &msg);
 	void NotifyComplete(Laminpie_Boot_Event_Type phase);
 
-    bool RunPhaseWithTimeout(std::function<bool()> phase_fn, Laminpie_Boot_Event_Type phase);
-    bool RunPhase(std::function<bool()> phase_fn, Laminpie_Boot_Event_Type phase);
+    bool RunPhaseWithTimeout(std::function<BootResult<void>()> phase_fn, Laminpie_Boot_Event_Type phase);
+    bool RunPhase(std::function<BootResult<void>()> phase_fn, Laminpie_Boot_Event_Type phase);
 
     // helper methods
     uint8_t CalculateProgress(Laminpie_Boot_Event_Type phase) const;

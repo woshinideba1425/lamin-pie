@@ -25,7 +25,7 @@ bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framewor
     
     // Boot phases configuration
     struct BootPhase {
-        std::function<bool()> fn;
+        std::function<BootResult<void>()> fn;
         Laminpie_Boot_Event_Type type;
         const char* name;
     };
@@ -47,10 +47,17 @@ bool Laminpie_Boot_Manager::ConsignToBoot(Laminpie_Core_Framework &core_framewor
         // Notify phase start
         NotifyPhase(phase.type);
         
-        // Execute phase with timeout
-        if (!RunPhaseWithTimeout(phase.fn, phase.type)) {
+        // Execute phase and handle BootResult
+        auto result = phase.fn();
+        if (!result.is_ok()) {
             LOGE("BootManager: Failed at phase: %s", phase.name);
-            NotifyError(phase.type, -1, std::string("Failed to initialize ") + phase.name);
+            
+            // Extract detailed error information from BootResult
+            auto error = result.error();
+            std::string error_msg = error->message();
+            int error_code = error->code();
+            
+            NotifyError(phase.type, error_code, error_msg);
             _boot_status = Laminpie_Boot_Event_Type::kBoot_Stage_Failed;
             return false;
         }
@@ -152,6 +159,25 @@ const char* Laminpie_Boot_Manager::GetPhaseName(Laminpie_Boot_Event_Type phase) 
         case Laminpie_Boot_Event_Type::kBoot_Stage_Complete: return "Complete";
         case Laminpie_Boot_Event_Type::kBoot_Stage_Failed: return "Failed";
         default: return "Unknown";
+    }
+}
+
+bool Laminpie_Boot_Manager::RunPhaseWithTimeout(std::function<BootResult<void>()> phase_fn, Laminpie_Boot_Event_Type phase) {
+    // For now, just run the phase without timeout
+    // TODO: Implement actual timeout mechanism
+    return RunPhase(phase_fn, phase);
+}
+
+bool Laminpie_Boot_Manager::RunPhase(std::function<BootResult<void>()> phase_fn, Laminpie_Boot_Event_Type phase) {
+    try {
+        auto result = phase_fn();
+        return result.is_ok();
+    } catch (const std::exception& e) {
+        LOGE("BootManager: Exception in phase %s: %s", GetPhaseName(phase), e.what());
+        return false;
+    } catch (...) {
+        LOGE("BootManager: Unknown exception in phase %s", GetPhaseName(phase));
+        return false;
     }
 }
 

@@ -13,6 +13,6 @@ if (ESP_PLATFORM)
         message(STATUS "Including test configuration for ESP-IDF platform")
     endif()
 else()
-    include(${CMAKE_CURRENT_LIST_DIR}env_support/cmake/basic.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/env_support/cmake/basic.cmake)
 endif()
  

@@ -7,7 +7,7 @@
 #include "laminpie_core_display.hpp"
 #include "laminpie_device_manager.h"
 #include "laminpie_app_manager.hpp"
-#include <sys/_stdint.h>
+#include <cstdint>
 #include <memory>
 
 namespace laminpie::system::framework {

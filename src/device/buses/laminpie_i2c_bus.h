@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <mutex>
-#include <sys/_stdint.h>
+#include <stdint.h>
 #include <driver/i2c_master.h>
 #include <cstring>
 #include "interface/bus.h"

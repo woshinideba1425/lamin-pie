@@ -8,7 +8,6 @@
 #include <memory>
 #include "interface/device_types.h"
 #include "lvgl.h"
-#include "misc/lv_types.h"
 #include <typeindex>
 #include <chrono>
 

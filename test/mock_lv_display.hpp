@@ -74,14 +74,14 @@ public:
 
 private:
     void InitializeMockDisplay() {
-        LP_LOG_INFO("MOCK_DISPLAY", "Initializing mock LVGL display: %dx%d", _hor_res, _ver_res);
+        LOGI( "Initializing mock LVGL display: %dx%d", _hor_res, _ver_res);
         
         // 初始化LVGL（如果尚未初始化）
         static bool lvgl_initialized = false;
         if (!lvgl_initialized) {
             lv_init();
             lvgl_initialized = true;
-            LP_LOG_INFO("MOCK_DISPLAY", "LVGL initialized for testing");
+            LOGI( "LVGL initialized for testing");
         }
         
         // 创建测试帧缓冲区
@@ -89,14 +89,14 @@ private:
         _test_fb = std::make_unique<lv_color32_t[]>(buffer_size);
         
         if (!_test_fb) {
-            LP_LOG_ERROR("MOCK_DISPLAY", "Failed to allocate test frame buffer");
+            LOGE("Failed to allocate test frame buffer");
             return;
         }
         
         // 创建显示设备
         _display = lv_display_create(_hor_res, _ver_res);
         if (!_display) {
-            LP_LOG_ERROR("MOCK_DISPLAY", "Failed to create LVGL display");
+            LOGE("Failed to create LVGL display");
             return;
         }
         
@@ -113,12 +113,12 @@ private:
         // 设置用户数据指针，用于回调函数访问实例
         lv_display_set_user_data(_display, this);
         
-        LP_LOG_INFO("MOCK_DISPLAY", "Mock display created successfully");
+        LOGI( "Mock display created successfully");
     }
     
     void CleanupMockDisplay() {
         if (_display) {
-            LP_LOG_INFO("MOCK_DISPLAY", "Cleaning up mock display");
+            LOGI( "Cleaning up mock display");
             lv_display_delete(_display);
             _display = nullptr;
         }
@@ -140,7 +140,7 @@ private:
             mock_display->_last_flushed_buf = color_p;
             mock_display->_flush_count++;
             
-            LP_LOG_DEBUG("MOCK_DISPLAY", "Mock flush: area(%d,%d,%d,%d), count=%u", 
+            LOGD("Mock flush: area(%d,%d,%d,%d), count=%u", 
                         area->x1, area->y1, area->x2, area->y2, mock_display->_flush_count);
         }
         

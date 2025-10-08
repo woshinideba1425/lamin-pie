@@ -1,9 +1,9 @@
 #pragma once 
 
-#include "laminpie_conf.h"
-
 // *INDENT-OFF*
 #if defined(ESP_PLATFORM)
+#include "sdkconfig.h"
+#elif defined(PLATFORM_GENERIC)
 #include "sdkconfig.h"
 #endif
 
@@ -57,7 +57,9 @@
 
 
 /* 使用 Kconfig 生成的值 */
+#ifndef CONFIG_LAMINPIE_USE_OS_VALUE
 #define LAMINPIE_USE_OS CONFIG_LAMINPIE_USE_OS_VALUE
+#endif
 
 /* 自定义操作系统包含文件 */
 #ifdef LAMINPIE_USE_OS_CUSTOM

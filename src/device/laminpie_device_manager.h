@@ -10,9 +10,17 @@
 #include "interface/driver.h"
 #include "interface/bus.h"
 #include "laminpie_event_dispatcher.hpp"
+
+#ifdef PLATFORM_GENERIC
+// Linux platform - use standard C++ headers
+#include <thread>
+#include <chrono>
+#else
+// ESP-IDF platform - use FreeRTOS headers
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#endif
 
 #define DEVICE_SETUP_RETRY_COUNT 3
 #define DEVICE_MANAGER_TASK_PRIORITY 10
@@ -93,7 +101,13 @@ private:
 
     std::atomic<bool> _running;
     
+#ifdef PLATFORM_GENERIC
+    // Linux platform - use std::thread
+    std::thread _deviceManagerTask;
+#else
+    // ESP-IDF platform - use FreeRTOS task handle
     TaskHandle_t _deviceManagerTask;
+#endif
     
     // 初始化标志
     bool _initialized;

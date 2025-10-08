@@ -1,144 +1,23 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdarg.h>
-#include "sdkconfig.h"
+/**
+ * @file laminpie_log.hpp
+ * @brief LaminPie日志系统 - 使用lalog.h作为底层实现
+ * @author LaminPie Team
+ * @date 2024
+ * 
+ * 本文件提供LaminPie项目的日志功能，基于lalog.h实现
+ * 所有LP_LOG_XXXX和LP_MOD_LOG_XXXX宏已被完全废弃
+ * 请直接使用lalog.h中的LOGX宏：
+ * - LOGV(...)  - Verbose级别日志
+ * - LOGD(...)  - Debug级别日志  
+ * - LOGI(...)  - Info级别日志
+ * - LOGW(...)  - Warning级别日志
+ * - LOGE(...)  - Error级别日志
+ * - FATAL(...) - Fatal级别日志
+ */
 
-// Check C++20 support
-#if __cplusplus >= 202002L && defined(__cpp_nontype_template_args)
-#   define LAMINPIE_LOG_CXX20_SUPPORT 1
-#   include <source_location>
-#else
-#   define LAMINPIE_LOG_CXX20_SUPPORT 0
-#endif
-
-#if defined(ESP_PLATFORM)
-    #include "esp_log.h"
-    #define PLATFORM_ESP32
-#elif defined(__RTTHREAD__)
-    #include "rtthread.h"
-    #define PLATFORM_RTTHREAD
-#else
-    #define PLATFORM_GENERIC
-    #include <iostream>
-#endif
-
-// 日志级别定义
-#define LP_LOG_LEVEL_DEBUG 1
-#define LP_LOG_LEVEL_INFO  2
-#define LP_LOG_LEVEL_WARN  3
-#define LP_LOG_LEVEL_ERROR 4
-#define LP_LOG_LEVEL_NONE  5
-
-// 默认日志级别
-#if CONFIG_LAMINPIE_LOG_LEVEL_DEBUG
-#define LP_LOG_LEVEL LP_LOG_LEVEL_DEBUG
-#elif CONFIG_LAMINPIE_LOG_LEVEL_INFO
-#define LP_LOG_LEVEL LP_LOG_LEVEL_INFO
-#elif CONFIG_LAMINPIE_LOG_LEVEL_WARN
-#define LP_LOG_LEVEL LP_LOG_LEVEL_WARN
-#elif CONFIG_LAMINPIE_LOG_LEVEL_ERROR
-#define LP_LOG_LEVEL LP_LOG_LEVEL_ERROR
-#else   
-#define LP_LOG_LEVEL LP_LOG_LEVEL_NONE
-#endif
-
-#if defined(PLATFORM_ESP32)
-    #if LP_LOG_LEVEL <= LP_LOG_LEVEL_TRACE
-    #define LP_LOG_TRACE(tag, fmt, ...) ESP_LOGV(tag, fmt, ##__VA_ARGS__)
-    #else
-    #define LP_LOG_TRACE(tag, fmt, ...) ((void)0)
-    #endif
-
-    #if LP_LOG_LEVEL <= LP_LOG_LEVEL_DEBUG
-    #define LP_LOG_DEBUG(tag, fmt, ...) ESP_LOGD(tag, fmt, ##__VA_ARGS__)
-    #else
-    #define LP_LOG_DEBUG(tag, fmt, ...) ((void)0)
-    #endif
-
-    #if LP_LOG_LEVEL <= LP_LOG_LEVEL_INFO
-    #define LP_LOG_INFO(tag, fmt, ...) ESP_LOGI(tag, fmt, ##__VA_ARGS__)
-    #else
-    #define LP_LOG_INFO(tag, fmt, ...) ((void)0)
-    #endif
-
-    #if LP_LOG_LEVEL <= LP_LOG_LEVEL_WARN
-    #define LP_LOG_WARN(tag, fmt, ...) ESP_LOGW(tag, fmt, ##__VA_ARGS__)
-    #else
-    #define LP_LOG_WARN(tag, fmt, ...) ((void)0)
-    #endif
-
-    #if LP_LOG_LEVEL <= LP_LOG_LEVEL_ERROR
-    #define LP_LOG_ERROR(tag, fmt, ...) ESP_LOGE(tag, fmt, ##__VA_ARGS__)
-    #else
-    #define LP_LOG_ERROR(tag, fmt, ...) ((void)0)
-    #endif
-
-#elif defined(PLATFORM_GENERIC)
-    #define LP_LOG_TRACE(tag, fmt, ...) printf("[TRACE][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_DEBUG(tag, fmt, ...) printf("[DEBUG][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_INFO(tag, fmt, ...) printf("[INFO][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_WARN(tag, fmt, ...) printf("[WARN][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_ERROR(tag, fmt, ...) printf("[ERROR][%s] " fmt "\n", tag, ##__VA_ARGS__)
-
-#elif defined(PLATFORM_RTTHREAD)
-    #define LP_LOG_TRACE(tag, fmt, ...) rt_kprintf("[TRACE][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_DEBUG(tag, fmt, ...) rt_kprintf("[DEBUG][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_INFO(tag, fmt, ...) rt_kprintf("[INFO][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_WARN(tag, fmt, ...) rt_kprintf("[WARN][%s] " fmt "\n", tag, ##__VA_ARGS__)
-    #define LP_LOG_ERROR(tag, fmt, ...) rt_kprintf("[ERROR][%s] " fmt "\n", tag, ##__VA_ARGS__)
-#endif
-
-// 模块日志宏（带开关控制）
-#if LP_LOG_LEVEL <= LP_LOG_LEVEL_TRACE
-#define LP_MOD_LOG_TRACE_ENTER(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "Enter"); } while(0)
-#define LP_MOD_LOG_TRACE_EXIT(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "Exit"); } while(0)
-#define LP_MOD_LOG_TRACE_ENTER_WITH_THIS(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "(@%p)Enter", this); } while(0)
-#define LP_MOD_LOG_TRACE_EXIT_WITH_THIS(tag, enable) do { if (enable) LP_LOG_DEBUG(tag, "(@%p)Exit", this); } while(0)
-#else
-#define LP_MOD_LOG_TRACE_ENTER(tag, enable) ((void)0)
-#define LP_MOD_LOG_TRACE_EXIT(tag, enable) ((void)0)
-#define LP_MOD_LOG_TRACE_ENTER_WITH_THIS(tag, enable) ((void)0)
-#define LP_MOD_LOG_TRACE_EXIT_WITH_THIS(tag, enable) ((void)0)
-#endif
-
-#if LP_LOG_LEVEL <= LP_LOG_LEVEL_DEBUG
-#define LP_MOD_LOG_DEBUG(tag, enable, fmt, ...) do { if (enable) LP_LOG_DEBUG(tag, fmt, ##__VA_ARGS__); } while(0)
-#else
-#define LP_MOD_LOG_DEBUG(tag, enable, fmt, ...) ((void)0)
-#endif
-
-#if LP_LOG_LEVEL <= LP_LOG_LEVEL_INFO
-#define LP_MOD_LOG_INFO(tag, enable, fmt, ...) do { if (enable) LP_LOG_INFO(tag, fmt, ##__VA_ARGS__); } while(0)
-#else
-#define LP_MOD_LOG_INFO(tag, enable, fmt, ...) ((void)0)
-#endif
-
-#if LP_LOG_LEVEL <= LP_LOG_LEVEL_WARN
-#define LP_MOD_LOG_WARN(tag, enable, fmt, ...) do { if (enable) LP_LOG_WARN(tag, fmt, ##__VA_ARGS__); } while(0)
-#else
-#define LP_MOD_LOG_WARN(tag, enable, fmt, ...) ((void)0)
-#endif
-
-#if LP_LOG_LEVEL <= LP_LOG_LEVEL_ERROR
-#define LP_MOD_LOG_ERROR(tag, enable, fmt, ...) do { if (enable) LP_LOG_ERROR(tag, fmt, ##__VA_ARGS__); } while(0)
-#else
-#define LP_MOD_LOG_ERROR(tag, enable, fmt, ...) ((void)0)
-#endif
-
-#ifdef CONFIG_LAMINPIE_LOG_LEVEL_DEBUG
-#undef LP_LOG_LEVEL
-#define LP_LOG_LEVEL LP_LOG_LEVEL_DEBUG
-#elif defined(CONFIG_LAMINPIE_LOG_LEVEL_INFO)
-#undef LP_LOG_LEVEL
-#define LP_LOG_LEVEL LP_LOG_LEVEL_INFO
-#elif defined(CONFIG_LAMINPIE_LOG_LEVEL_WARN)
-#undef LP_LOG_LEVEL
-#define LP_LOG_LEVEL LP_LOG_LEVEL_WARN
-#elif defined(CONFIG_LAMINPIE_LOG_LEVEL_ERROR)
-#undef LP_LOG_LEVEL
-#define LP_LOG_LEVEL LP_LOG_LEVEL_ERROR
-#endif 
+#include "lalog.h" 
 
 #ifdef __cplusplus
 #include <algorithm>
@@ -279,20 +158,20 @@ namespace laminpie::utils {
             }
 
             if (_thisPtr) {
-                LP_LOG_DEBUG(_tag, "[%s:%04d](%s): (@%p) Enter", 
+                LOGD(_tag, "[%s:%04d](%s): (@%p) Enter", 
                            _fileName.c_str(), _line, _funcName.c_str(), _thisPtr);
             } else {
-                LP_LOG_DEBUG(_tag, "[%s:%04d](%s): Enter", 
+                LOGD(_tag, "[%s:%04d](%s): Enter", 
                            _fileName.c_str(), _line, _funcName.c_str());
             }
         }
 
         ~LogTraceGuard() {
             if (_thisPtr) {
-                LP_LOG_DEBUG(_tag, "[%s:%04d](%s): (@%p) Exit", 
+                LOGD(_tag, "[%s:%04d](%s): (@%p) Exit", 
                            _fileName.c_str(), _line, _funcName.c_str(), _thisPtr);
             } else {
-                LP_LOG_DEBUG(_tag, "[%s:%04d](%s): Exit", 
+                LOGD(_tag, "[%s:%04d](%s): Exit", 
                            _fileName.c_str(), _line, _funcName.c_str());
             }
         }
@@ -315,19 +194,7 @@ namespace laminpie::utils {
         va_list args;
         va_start(args, fmt);
         
-        #if defined(PLATFORM_ESP32)
-            char buffer[256];
-            vsnprintf(buffer, sizeof(buffer), fmt, args);
-            ESP_LOGE("LAMINPIE", "%s", buffer);
-        #elif defined(PLATFORM_GENERIC)
-            printf("[ERROR][LAMINPIE] ");
-            vprintf(fmt, args);
-            printf("\n");
-        #elif defined(PLATFORM_RTTHREAD)
-            rt_kprintf("[ERROR][LAMINPIE] ");
-            rt_vprintf(fmt, args);
-            rt_kprintf("\n");
-        #endif
+        LOGE(fmt, args);
         
         va_end(args);
     }
