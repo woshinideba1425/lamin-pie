@@ -11,6 +11,8 @@ Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Lam
                             _core_display(core_display),
                             _core_device_manager(core_device_manager),
                             _core_app_navigation(core_navigation),
+                            _core_app_manager(core_manager),
+                            _core_event(core_event),
                             _display_device(device),
                             _touch_device(nullptr),
                             _device_event_type(event::Laminpie_Device_Event_Type::kDevice_Event_Type_Max),
@@ -21,21 +23,11 @@ Laminpie_Core_Framework::Laminpie_Core_Framework(Laminpie_Core_Data_t &data, Lam
                             _lv_lock_callback(nullptr),
                             _lv_unlock_callback(nullptr)
 {
-    // 使用外部提供的组件
-    _core_event = event::LaminPie_EventDispatcher::Create();
-    
     LOGI("Core framework initialized with external components");
 }
 
 Laminpie_Core_Framework::~Laminpie_Core_Framework(void)
 {
-    // 清理内部管理的组件
-    if (_core_app_manager) {
-        _core_app_manager->DestroyAllApps();
-    }
-    
-    _core_event.reset();
-    
     LOGI("Core framework destroyed");
 }
 

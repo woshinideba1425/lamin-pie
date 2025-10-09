@@ -21,6 +21,7 @@ void LogDump  (int level,const char*tag,const char*func,int line,const char*labe
 void LogSetModuleLevel(const char*module,int level);
 void LogParseModule(const char*module);
 void LogParseModules(int argc,const char*argv[]);
+void LogShutdown();
 #ifdef __cplusplus
 }
 #endif 

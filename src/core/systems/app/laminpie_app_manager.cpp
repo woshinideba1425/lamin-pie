@@ -63,7 +63,7 @@ bool Laminpie_App_Manager::StartApp(app::Laminpie_App_Base* app)
             if(entry.app == app && entry.app->GetName() == app->GetName() && entry.app->GetId() == app->GetId()){
                if(entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused) {
                 LOGI("App manager resumed app: %s", app->GetName().c_str());
-                entry.app_state = Laminpie_App_Event_Type::kApp_Status_Resumed;
+                entry.app->ProcessResume();
                 break;
                }
             }
@@ -172,10 +172,32 @@ bool Laminpie_App_Manager::DestroyApp(Laminpie_App_Base* app)
 
 void Laminpie_App_Manager::DestroyAllApps() {
     LOGI("Destroying all apps");
-    std::vector<Laminpie_App_Base*> to_close;
-    to_close.reserve(_running_apps.size());
-    for(const auto &e : _running_apps){ to_close.push_back(e.app); }
-    for(auto *app : to_close){ DestroyApp(app); }
+    
+    // 直接遍历并销毁所有应用，不通过状态转换机制
+    for (auto iter = _running_apps.begin(); iter != _running_apps.end(); ) {
+        Laminpie_App_Base* app = iter->app;
+        
+        if (app) {
+            // 直接调用应用的关闭方法，不通过状态转换
+            try {
+                app->OnClose();
+                app->ProcessClose(true);
+            } catch (const std::exception& e) {
+                LOGE("Exception during app close: %s", e.what());
+            } catch (...) {
+                LOGE("Unknown exception during app close");
+            }
+        }
+        
+        // 从容器中移除
+        iter = _running_apps.erase(iter);
+    }
+    
+    // 确保容器为空
+    _running_apps.clear();
+    _foreground_app = nullptr;
+    
+    LOGI("All apps destroyed");
 }
 
 void Laminpie_App_Manager::ProcessAppRunningBG(Laminpie_AppEntry& entry)
@@ -215,9 +237,7 @@ void Laminpie_App_Manager::ProcessAppCloseEvent(const App_EventData_t& event)
         if (entry.app->GetId() == event.id) {
             LOGI("Setting app to closed state: %p", (void*)entry.app);
             entry.app_state = Laminpie_App_Event_Type::kApp_Status_Closed;
-            _running_apps.erase(std::remove_if(_running_apps.begin(), _running_apps.end(), 
-                [&entry](const Laminpie_AppEntry& e) { return e.app == entry.app; }), 
-                _running_apps.end());
+
             break;
         }
     }
@@ -377,7 +397,9 @@ bool Laminpie_App_Manager::IsAppRunning(Laminpie_App_Base* app) const
     LOGI("Checking if app is running: %s", app->GetName().c_str());
     for(auto &entry : _running_apps){
         if(entry.app == app && entry.app->GetName() == app->GetName() && entry.app->GetId() == app->GetId()){
-            if(entry.app_state  == Laminpie_App_Event_Type::kApp_Status_Paused){
+            // 只有暂停状态和关闭状态才不算运行
+            if(entry.app_state == Laminpie_App_Event_Type::kApp_Status_Paused || 
+               entry.app_state == Laminpie_App_Event_Type::kApp_Status_Closed){
                 return false;
             }
             return true;
@@ -463,8 +485,9 @@ bool Laminpie_App_Manager::ProcessAppClose(Laminpie_App_Base *app){
         [&app](const Laminpie_AppEntry& e) { return e.app == app; }), 
         _running_apps.end());
 
-    // 移除注册表
-    Uninstall(app->GetId());
+    // 注意：不要在这里调用 Uninstall，因为应用对象的内存管理应该由创建者负责
+    // Uninstall 会尝试删除应用对象，但应用对象可能已经被智能指针管理
+    // 我们只需要从运行队列中移除应用即可
     return true;
 }
 

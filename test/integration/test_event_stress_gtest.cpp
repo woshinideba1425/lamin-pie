@@ -14,7 +14,7 @@
  * @brief 事件压力测试类
  */
 class EventStressTest : public LaminPiePerformanceTest {
-private:
+protected:
     laminpie::system::event::LaminPie_EventDispatcher& dispatcher;
     std::atomic<int> event_count{0};
     std::atomic<int> processed_count{0};
@@ -26,6 +26,8 @@ public:
     
     ~EventStressTest() {
         dispatcher.stop();
+        // 确保日志线程正确关闭
+        LogShutdown();
     }
     
     void SetUp() override {
@@ -59,12 +61,13 @@ TEST_F(EventStressTest, TestHighFrequencyEvents) {
     
     // 快速发送大量事件
     for (int i = 0; i < event_count; i++) {
-        auto test_device = std::make_shared<laminpie::system::device::DeviceInfo>();
+        auto test_device = std::make_shared<DeviceIdentifier>();
         test_device->id = "stress_device_" + std::to_string(i);
         
-        laminpie::system::event::DeviceEvent test_event;
-        test_event.device = test_device;
-        test_event.event_type = laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd;
+        laminpie::system::event::DeviceEvent test_event(
+            laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+            test_device
+        );
         
         dispatcher.dispatchEvent(test_event);
     }
@@ -116,12 +119,13 @@ TEST_F(EventStressTest, TestConcurrentEventHandling) {
     for (int t = 0; t < thread_count; t++) {
         threads.emplace_back([this, t, events_per_thread]() {
             for (int i = 0; i < events_per_thread; i++) {
-                auto test_device = std::make_shared<laminpie::system::device::DeviceInfo>();
+                auto test_device = std::make_shared<DeviceIdentifier>();
                 test_device->id = "concurrent_device_" + std::to_string(t) + "_" + std::to_string(i);
                 
-                laminpie::system::event::DeviceEvent test_event;
-                test_event.device = test_device;
-                test_event.event_type = laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd;
+                laminpie::system::event::DeviceEvent test_event(
+                    laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+                    test_device
+                );
                 
                 dispatcher.dispatchEvent(test_event);
             }
@@ -176,12 +180,13 @@ TEST_F(EventStressTest, TestEventQueueStress) {
         LOGI("Sending burst %d of %d events", burst + 1, burst_size);
         
         for (int i = 0; i < burst_size; i++) {
-            auto test_device = std::make_shared<laminpie::system::device::DeviceInfo>();
+            auto test_device = std::make_shared<DeviceIdentifier>();
             test_device->id = "burst_device_" + std::to_string(burst) + "_" + std::to_string(i);
             
-            laminpie::system::event::DeviceEvent test_event;
-            test_event.device = test_device;
-            test_event.event_type = laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd;
+            laminpie::system::event::DeviceEvent test_event(
+                laminpie::system::event::Laminpie_Device_Event_Type::kDeviceAdd,
+                test_device
+            );
             
             dispatcher.dispatchEvent(test_event);
         }

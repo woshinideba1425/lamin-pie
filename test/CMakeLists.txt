@@ -1,4 +1,4 @@
-# LaminPie Test CMakeLists.txt - Using Real Components with Kconfig
+# LaminPie Test CMakeLists.txt - Independent Executable Project
 
 cmake_minimum_required(VERSION 3.10)
 project(laminpie_tests)
@@ -18,20 +18,50 @@ pkg_check_modules(GTEST REQUIRED gtest)
 # Include Google Test
 include_directories(${GTEST_INCLUDE_DIRS})
 
-# Build LaminPie component first
+# Set up LaminPie root directory
 set(LAMINPIE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
-include(${LAMINPIE_ROOT_DIR}/env_support/cmake/basic.cmake)
 
-# Add LVGL subdirectory to build LVGL library
-set(LVGL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../managed_components/lvgl__lvgl)
+# Build LaminPie library first
+add_subdirectory(${LAMINPIE_ROOT_DIR} laminpie_lib EXCLUDE_FROM_ALL)
+
+# Get LaminPie include directories from the built library
+get_target_property(LAMINPIE_INCLUDE_DIRS laminpie INTERFACE_INCLUDE_DIRECTORIES)
+if(NOT LAMINPIE_INCLUDE_DIRS)
+    # Fallback: manually set include directories
+    set(LAMINPIE_INCLUDE_DIRS 
+        ${LAMINPIE_ROOT_DIR}
+        ${LAMINPIE_ROOT_DIR}/src/common
+        ${LAMINPIE_ROOT_DIR}/src/device
+        ${LAMINPIE_ROOT_DIR}/src/device/buses
+        ${LAMINPIE_ROOT_DIR}/src/device/drivers
+        ${LAMINPIE_ROOT_DIR}/src/device/drivers/i2c
+        ${LAMINPIE_ROOT_DIR}/src/device/interface
+        ${LAMINPIE_ROOT_DIR}/src/core/systems
+        ${LAMINPIE_ROOT_DIR}/src/core/systems/app
+        ${LAMINPIE_ROOT_DIR}/src/core/systems/framework
+        ${LAMINPIE_ROOT_DIR}/src/core/gui
+        ${LAMINPIE_ROOT_DIR}/src/core/gui/lvgl
+        ${LAMINPIE_ROOT_DIR}/src/porting
+    )
+endif()
+
+# Find LVGL
+set(LVGL_ROOT_DIR ${LAMINPIE_ROOT_DIR}/../managed_components/lvgl__lvgl)
 if(EXISTS ${LVGL_ROOT_DIR})
-    # Disable LVGL examples to avoid configuration issues
-    set(LVGL_BUILD_EXAMPLES OFF CACHE BOOL "Build LVGL examples" FORCE)
-    set(LVGL_USE_EXAMPLES OFF CACHE BOOL "Use LVGL examples" FORCE)
-    add_subdirectory(${LVGL_ROOT_DIR} lvgl_build)
-    message(STATUS "LVGL library will be built from: ${LVGL_ROOT_DIR}")
+    message(STATUS "Using LVGL from: ${LVGL_ROOT_DIR}")
+    # If LVGL has CMakeLists.txt, build it as a subdirectory
+    if(EXISTS ${LVGL_ROOT_DIR}/CMakeLists.txt)
+        # Disable LVGL examples to avoid configuration issues
+        set(LVGL_BUILD_EXAMPLES OFF CACHE BOOL "Build LVGL examples" FORCE)
+        set(LVGL_USE_EXAMPLES OFF CACHE BOOL "Use LVGL examples" FORCE)
+        add_subdirectory(${LVGL_ROOT_DIR} lvgl_build)
+        message(STATUS "LVGL library will be built from: ${LVGL_ROOT_DIR}")
+    else()
+        message(STATUS "LVGL found but no CMakeLists.txt - using as header-only library")
+    endif()
+    set(LVGL_FOUND TRUE)
 else()
-    message(FATAL_ERROR "LVGL not found at: ${LVGL_ROOT_DIR}")
+    message(FATAL_ERROR "LVGL not found! Please ensure LVGL is available.")
 endif()
 
 # Include Kconfig support
@@ -55,6 +85,7 @@ set(TEST_SOURCES
     integration/test_thread_system_gtest.cpp
     integration/test_app_manager_integration_gtest.cpp
     integration/test_event_system_gtest.cpp
+    integration/test_event_stress_gtest.cpp
 )
 
 # Create test executable
@@ -68,12 +99,21 @@ target_include_directories(laminpie_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}/config
     ${LAMINPIE_INCLUDE_DIRS}
+    ${LVGL_ROOT_DIR}
+    ${LVGL_ROOT_DIR}/src
     ${GTEST_INCLUDE_DIRS}
 )
 
+# Ensure sdkconfig.h is found
+if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/config/sdkconfig.h)
+    message(STATUS "Found sdkconfig.h in build config directory")
+else()
+    message(WARNING "sdkconfig.h not found in ${CMAKE_CURRENT_BINARY_DIR}/config/")
+endif()
+
 # Link libraries
 target_link_libraries(laminpie_tests
-    ${LAMINPIE_LIBRARIES}
+    laminpie
     lvgl
     ${GTEST_LIBRARIES}
     pthread

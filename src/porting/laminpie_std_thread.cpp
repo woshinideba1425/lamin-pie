@@ -66,17 +66,17 @@ Result<laminpie_thread_t*> laminpie_thread_create(
     size_t stack_size, 
     void *user_data) {
     
-    LOGI("THREAD_PORTING", "Creating thread with priority: %d", prio);
+    LOGI("Creating thread with priority: %d", prio);
     
     // 参数验证
     if (callback == nullptr) {
-        LOGE("THREAD_PORTING", "Thread callback is null");
+        LOGE("Thread callback is null");
         return Err<laminpie_thread_t*>(InvalidParameterError("Thread callback cannot be null"));
     }
     
     if (stack_size == 0) {
         stack_size = 8192; // 默认栈大小
-        LOGW("THREAD_PORTING", "Using default stack size: %zu", stack_size);
+        LOGW("Using default stack size: %zu", stack_size);
     }
     
     try {
@@ -89,52 +89,52 @@ Result<laminpie_thread_t*> laminpie_thread_create(
         
         // 创建线程 - 使用移动语义避免拷贝问题
         auto thread_ptr = thread_obj.get();
-        LOGD("THREAD_PORTING", "About to create thread, thread_ptr=%p", thread_ptr);
-        LOGD("THREAD_PORTING", "Thread callback=%p, user_data=%p", 
+        LOGD("About to create thread, thread_ptr=%p", thread_ptr);
+        LOGD("Thread callback=%p, user_data=%p", 
                     (void*)thread_ptr->callback, thread_ptr->user_data);
         
         thread_obj->thread = std::make_unique<std::thread>([thread_ptr]() {
-            LOGD("THREAD_PORTING", "Thread lambda started, thread_ptr=%p", thread_ptr);
+            LOGD("Thread lambda started, thread_ptr=%p", thread_ptr);
             
             // 设置运行状态
-            LOGD("THREAD_PORTING", "Setting running=true");
+            LOGD("Setting running=true");
             thread_ptr->running = true;
-            LOGD("THREAD_PORTING", "Running flag set, value=%d", thread_ptr->running.load());
+            LOGD("Running flag set, value=%d", thread_ptr->running.load());
             
             // 执行用户回调
-            LOGD("THREAD_PORTING", "About to call user callback");
+            LOGD("About to call user callback");
             try {
                 if (thread_ptr->callback) {
                     thread_ptr->callback(thread_ptr->user_data);
-                    LOGD("THREAD_PORTING", "User callback completed successfully");
+                    LOGD("User callback completed successfully");
                 } else {
-                    LOGE("THREAD_PORTING", "Callback is null!");
+                    LOGE("Callback is null!");
                 }
             } catch (const std::exception& e) {
-                LOGE("THREAD_PORTING", "Thread callback exception: %s", e.what());
+                LOGE("Thread callback exception: %s", e.what());
             } catch (...) {
-                LOGE("THREAD_PORTING", "Thread callback unknown exception");
+                LOGE("Thread callback unknown exception");
             }
             
             // 等待被显式停止，而不是立即退出
-            LOGD("THREAD_PORTING", "Callback completed, waiting for stop signal...");
+            LOGD("Callback completed, waiting for stop signal...");
             std::unique_lock<std::mutex> lock(thread_ptr->state_mutex);
             thread_ptr->state_cv.wait(lock, [thread_ptr] { 
                 return thread_ptr->should_stop.load(); 
             });
             
             // 线程结束
-            LOGD("THREAD_PORTING", "Setting running=false");
+            LOGD("Setting running=false");
             thread_ptr->running = false;
             
-            LOGD("THREAD_PORTING", "Thread finished");
+            LOGD("Thread finished");
         });
         
-        LOGD("THREAD_PORTING", "Thread object created, checking if joinable: %s", 
+        LOGD("Thread object created, checking if joinable: %s", 
                     thread_obj->thread->joinable() ? "true" : "false");
         
         // 等待线程启动 - 使用简单的轮询方式
-        LOGD("THREAD_PORTING", "Waiting for thread to start...");
+        LOGD("Waiting for thread to start...");
         
         // 轮询等待线程启动，最多等待1秒
         int retry_count = 0;
@@ -147,32 +147,32 @@ Result<laminpie_thread_t*> laminpie_thread_create(
             retry_count++;
             
             if (retry_count % 10 == 0) { // 每100ms打印一次状态
-                LOGD("THREAD_PORTING", "Waiting for thread start... retry %d/%d, running=%d", 
+                LOGD("Waiting for thread start... retry %d/%d, running=%d", 
                             retry_count, max_retries, started);
             }
         }
         
         if (!started) {
-            LOGE("THREAD_PORTING", "Thread failed to start after %d retries - running flag is false", retry_count);
-            LOGE("THREAD_PORTING", "Thread joinable: %s", 
+            LOGE("Thread failed to start after %d retries - running flag is false", retry_count);
+            LOGE("Thread joinable: %s", 
                         thread_obj->thread->joinable() ? "true" : "false");
             return Err<laminpie_thread_t*>(ThreadCreationError("Thread failed to start after timeout"));
         }
         
-        LOGD("THREAD_PORTING", "Thread started successfully after %d retries, running status: %d", 
+        LOGD("Thread started successfully after %d retries, running status: %d", 
                     retry_count, thread_ptr->running.load());
         
-        LOGI("THREAD_PORTING", "Thread created successfully");
+        LOGI("Thread created successfully");
         return Ok(thread_obj.release());
         
     } catch (const std::system_error& e) {
-        LOGE("THREAD_PORTING", "System error creating thread: %s", e.what());
+        LOGE("System error creating thread: %s", e.what());
         return Err<laminpie_thread_t*>(ThreadCreationError("System error: " + std::string(e.what()), e.code().value()));
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception creating thread: %s", e.what());
+        LOGE("Exception creating thread: %s", e.what());
         return Err<laminpie_thread_t*>(ThreadCreationError("Exception: " + std::string(e.what())));
     } catch (...) {
-        LOGE("THREAD_PORTING", "Unknown error creating thread");
+        LOGE("Unknown error creating thread");
         return Err<laminpie_thread_t*>(ThreadCreationError("Unknown error creating thread"));
     }
 }
@@ -180,11 +180,11 @@ Result<laminpie_thread_t*> laminpie_thread_create(
 // 线程删除函数
 Result<void> laminpie_thread_delete(laminpie_thread_t *thread) {
     if (thread == nullptr) {
-        LOGW("THREAD_PORTING", "Attempting to delete null thread");
+        LOGW("Attempting to delete null thread");
         return Err<void>(InvalidParameterError("Thread pointer is null"));
     }
     
-    LOGD("THREAD_PORTING", "Deleting thread");
+    LOGD("Deleting thread");
     
     try {
         // 设置停止标志
@@ -199,14 +199,14 @@ Result<void> laminpie_thread_delete(laminpie_thread_t *thread) {
         // 删除线程对象
         delete thread;
         
-        LOGD("THREAD_PORTING", "Thread deleted successfully");
+        LOGD("Thread deleted successfully");
         return Ok();
         
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception deleting thread: %s", e.what());
+        LOGE("Exception deleting thread: %s", e.what());
         return Err<void>(ThreadDeletionError("Exception: " + std::string(e.what())));
     } catch (...) {
-        LOGE("THREAD_PORTING", "Unknown error deleting thread");
+        LOGE("Unknown error deleting thread");
         return Err<void>(ThreadDeletionError("Unknown error deleting thread"));
     }
 }
@@ -223,7 +223,7 @@ Result<void> laminpie_thread_join(laminpie_thread_t *thread, uint32_t timeout_ms
     
     try {
         // 发送停止信号
-        LOGD("THREAD_PORTING", "Sending stop signal to thread");
+        LOGD("Sending stop signal to thread");
         thread->should_stop = true;
         thread->state_cv.notify_all();
         
@@ -238,7 +238,7 @@ Result<void> laminpie_thread_join(laminpie_thread_t *thread, uint32_t timeout_ms
             while (thread->thread->joinable() && thread->running.load()) {
                 auto elapsed = std::chrono::steady_clock::now() - start;
                 if (elapsed >= timeout_duration) {
-                    LOGW("THREAD_PORTING", "Thread join timeout after %" PRIu32 " ms", timeout_ms);
+                    LOGW("Thread join timeout after %" PRIu32 " ms", timeout_ms);
                     return Err<void>(TimeoutError("Thread join timeout", timeout_ms));
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -252,7 +252,7 @@ Result<void> laminpie_thread_join(laminpie_thread_t *thread, uint32_t timeout_ms
         return Ok();
         
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception joining thread: %s", e.what());
+        LOGE("Exception joining thread: %s", e.what());
         return Err<void>(ThreadDeletionError("Exception: " + std::string(e.what())));
     }
 }
@@ -270,10 +270,10 @@ Result<bool> laminpie_thread_is_running(laminpie_thread_t *thread) {
 Result<laminpie_mutex_t*> laminpie_mutex_create(void) {
     try {
         auto mutex = new laminpie_mutex_t();
-        LOGD("THREAD_PORTING", "Mutex created");
+        LOGD("Mutex created");
         return Ok(mutex);
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception creating mutex: %s", e.what());
+        LOGE("Exception creating mutex: %s", e.what());
         return Err<laminpie_mutex_t*>(MutexError("Exception: " + std::string(e.what())));
     }
 }
@@ -289,7 +289,7 @@ Result<void> laminpie_mutex_lock(laminpie_mutex_t *mutex) {
         mutex->locked = true;
         return Ok();
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception locking mutex: %s", e.what());
+        LOGE("Exception locking mutex: %s", e.what());
         return Err<void>(MutexError("Exception: " + std::string(e.what())));
     }
 }
@@ -305,7 +305,7 @@ Result<void> laminpie_mutex_unlock(laminpie_mutex_t *mutex) {
         mutex->locked = false;
         return Ok();
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception unlocking mutex: %s", e.what());
+        LOGE("Exception unlocking mutex: %s", e.what());
         return Err<void>(MutexError("Exception: " + std::string(e.what())));
     }
 }
@@ -318,10 +318,10 @@ Result<void> laminpie_mutex_delete(laminpie_mutex_t *mutex) {
     
     try {
         delete mutex;
-        LOGD("THREAD_PORTING", "Mutex deleted");
+        LOGD("Mutex deleted");
         return Ok();
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception deleting mutex: %s", e.what());
+        LOGE("Exception deleting mutex: %s", e.what());
         return Err<void>(MutexError("Exception: " + std::string(e.what())));
     }
 }
@@ -330,10 +330,10 @@ Result<void> laminpie_mutex_delete(laminpie_mutex_t *mutex) {
 Result<laminpie_semaphore_t*> laminpie_semaphore_create(uint32_t initial_count) {
     try {
         auto semaphore = new laminpie_semaphore_t(initial_count);
-        LOGD("THREAD_PORTING", "Semaphore created with initial count: %" PRIu32, initial_count);
+        LOGD("Semaphore created with initial count: %" PRIu32, initial_count);
         return Ok(semaphore);
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception creating semaphore: %s", e.what());
+        LOGE("Exception creating semaphore: %s", e.what());
         return Err<laminpie_semaphore_t*>(SemaphoreError("Exception: " + std::string(e.what())));
     }
 }
@@ -352,7 +352,7 @@ Result<void> laminpie_semaphore_wait(laminpie_semaphore_t *sem, uint32_t timeout
             // 超时等待
             auto timeout_duration = std::chrono::milliseconds(timeout_ms);
             if (!sem->semaphore.try_acquire_for(timeout_duration)) {
-                LOGW("THREAD_PORTING", "Semaphore wait timeout after %" PRIu32 " ms", timeout_ms);
+                LOGW("Semaphore wait timeout after %" PRIu32 " ms", timeout_ms);
                 return Err<void>(TimeoutError("Semaphore wait timeout", timeout_ms));
             }
         }
@@ -365,7 +365,7 @@ Result<void> laminpie_semaphore_wait(laminpie_semaphore_t *sem, uint32_t timeout
         return Ok();
         
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception waiting for semaphore: %s", e.what());
+        LOGE("Exception waiting for semaphore: %s", e.what());
         return Err<void>(SemaphoreError("Exception: " + std::string(e.what())));
     }
 }
@@ -387,7 +387,7 @@ Result<void> laminpie_semaphore_post(laminpie_semaphore_t *sem) {
         return Ok();
         
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception posting semaphore: %s", e.what());
+        LOGE("Exception posting semaphore: %s", e.what());
         return Err<void>(SemaphoreError("Exception: " + std::string(e.what())));
     }
 }
@@ -400,10 +400,10 @@ Result<void> laminpie_semaphore_delete(laminpie_semaphore_t *sem) {
     
     try {
         delete sem;
-        LOGD("THREAD_PORTING", "Semaphore deleted");
+        LOGD("Semaphore deleted");
         return Ok();
     } catch (const std::exception& e) {
-        LOGE("THREAD_PORTING", "Exception deleting semaphore: %s", e.what());
+        LOGE("Exception deleting semaphore: %s", e.what());
         return Err<void>(SemaphoreError("Exception: " + std::string(e.what())));
     }
 }
@@ -425,13 +425,13 @@ Result<void> laminpie_global_lock_isr(void) {
 
 // 初始化函数
 Result<void> laminpie_porting_init(void) {
-    LOGI("THREAD_PORTING", "Initializing std_thread porting layer");
+    LOGI("Initializing std_thread porting layer");
     return Ok();
 }
 
 // 清理函数
 Result<void> laminpie_porting_cleanup(void) {
-    LOGI("THREAD_PORTING", "Cleaning up std_thread porting layer");
+    LOGI("Cleaning up std_thread porting layer");
     return Ok();
 }
 

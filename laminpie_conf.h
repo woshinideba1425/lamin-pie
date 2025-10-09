@@ -4,7 +4,51 @@
 #if defined(ESP_PLATFORM)
 #include "sdkconfig.h"
 #elif defined(PLATFORM_GENERIC)
+// Try to include sdkconfig.h from different possible locations
+#if __has_include("sdkconfig.h")
 #include "sdkconfig.h"
+#elif __has_include("config/sdkconfig.h")
+#include "config/sdkconfig.h"
+#elif __has_include("../config/sdkconfig.h")
+#include "../config/sdkconfig.h"
+#elif __has_include("../../config/sdkconfig.h")
+#include "../../config/sdkconfig.h"
+#else
+// Fallback: define basic configuration if sdkconfig.h is not found
+#ifndef CONFIG_PLATFORM_GENERIC
+#define CONFIG_PLATFORM_GENERIC 1
+#endif
+#ifndef CONFIG_LAMINPIE_GUI_ENABLE_ANIM_PLAYER
+#define CONFIG_LAMINPIE_GUI_ENABLE_ANIM_PLAYER 0
+#endif
+#ifndef CONFIG_LAMINPIE_GUI_ENABLE_SQUARELINE
+#define CONFIG_LAMINPIE_GUI_ENABLE_SQUARELINE 0
+#endif
+#ifndef CONFIG_LAMINPIE_SERVICES_ENABLE_STORAGE
+#define CONFIG_LAMINPIE_SERVICES_ENABLE_STORAGE 1
+#endif
+#ifndef CONFIG_LAMINPIE_USE_OS_VALUE
+#define CONFIG_LAMINPIE_USE_OS_VALUE 1
+#endif
+
+
+#endif
+#endif
+
+#ifndef CONFIG_LAMINPIE_ENABLE_AI_FRAMEWORK
+#define CONFIG_LAMINPIE_ENABLE_AI_FRAMEWORK 1
+#endif
+
+#ifndef CONFIG_LAMINPIE_ENABLE_GUI
+#define CONFIG_LAMINPIE_ENABLE_GUI 1
+#endif
+
+#ifndef CONFIG_LAMINPIE_ENABLE_SERVICES
+#define CONFIG_LAMINPIE_ENABLE_SERVICES 1
+#endif
+
+#ifndef CONFIG_LAMINPIE_ENABLE_SYSTEMS
+#define CONFIG_LAMINPIE_ENABLE_SYSTEMS 1
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

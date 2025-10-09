@@ -45,6 +45,7 @@ public:
  * @brief 主函数
  */
 int main(int argc, char **argv) {
+    LogSetModuleLevel("laminpie_event_dispatcher", LOG_INFO);
     // 初始化Google Test
     ::testing::InitGoogleTest(&argc, argv);
     

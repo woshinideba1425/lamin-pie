@@ -211,10 +211,6 @@ public:
     void dispatchEvent(const EventType& event) {
         static_assert(std::is_base_of_v<IEvent, EventType>, "EventType must inherit from IEvent");
         
-        LOGD("Dispatching [%s] event: %s", 
-                              event.GetEventName().c_str(), 
-                              event.GetTypeIndexString().c_str());
-        
         std::vector<std::shared_ptr<std::vector<IEventListener>>> listeners_to_call;
         
         {

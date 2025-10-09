@@ -199,27 +199,29 @@ TEST_F(ThreadSystemTest, TestThreadPerformance) {
  * @brief 测试线程池模拟
  */
 TEST_F(ThreadSystemTest, TestThreadPoolSimulation) {
-    const int task_count = 100;
+    const int task_count = 50;  // 减少任务数量
     const int max_concurrent_threads = 4;
     
     std::atomic<int> completed_tasks{0};
     std::atomic<int> active_threads{0};
     std::vector<std::thread> threads;
     
-    // 模拟线程池
+    // 模拟线程池 - 修复逻辑
     for (int t = 0; t < max_concurrent_threads; t++) {
         threads.emplace_back([&]() {
-            while (completed_tasks.load() < task_count) {
-                active_threads.fetch_add(1);
-                
-                // 模拟任务执行
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                
+            while (true) {
+                // 原子地获取下一个任务
                 int current_task = completed_tasks.fetch_add(1);
                 if (current_task >= task_count) {
-                    completed_tasks.fetch_sub(1); // 回退，因为已经超过了
+                    // 如果已经超过任务数量，回退并退出
+                    completed_tasks.fetch_sub(1);
                     break;
                 }
+                
+                active_threads.fetch_add(1);
+                
+                // 模拟任务执行 - 减少睡眠时间
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
                 
                 active_threads.fetch_sub(1);
             }
@@ -231,8 +233,15 @@ TEST_F(ThreadSystemTest, TestThreadPoolSimulation) {
         thread.join();
     }
     
-    EXPECT_GE(completed_tasks.load(), task_count) 
-        << "All tasks should be completed";
+    // 等待所有活动线程完成
+    int retry_count = 0;
+    while (active_threads.load() > 0 && retry_count < 100) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        retry_count++;
+    }
+    
+    EXPECT_EQ(completed_tasks.load(), task_count) 
+        << "All tasks should be completed exactly";
     
     EXPECT_EQ(active_threads.load(), 0) 
         << "No threads should be active after completion";

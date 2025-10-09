@@ -58,20 +58,39 @@ static shared_queue<std::string>dbgMessages;
 static constexpr int kMaxMessageSize=2048;
 static char msgBoddy[kMaxMessageSize];
 
+static std::atomic<bool> sLogThreadRunning{false};
+static std::thread sLogThread;
+
 static void LogInit() {
 #if defined(ASYNC_LOG)&&ASYNC_LOG
     static std::once_flag sInit;
     std::call_once(sInit,[&]() {
-        std::thread th([]() {
-            while(1) {
+        sLogThreadRunning = true;
+        sLogThread = std::thread([]() {
+            while(sLogThreadRunning) {
                 std::string msg;
-                if(dbgMessages.size()==0)dbgMessages.wait_and_pop(msg,INT_MAX);
-                else dbgMessages.try_and_pop(msg);
+                if(dbgMessages.size()==0) {
+                    if(!dbgMessages.wait_and_pop(msg,100)) { // 100ms timeout
+                        continue;
+                    }
+                } else {
+                    if(!dbgMessages.try_and_pop(msg)) {
+                        continue;
+                    }
+                }
                 std::cout<<msg;
             }
         });
-        th.detach();
     });
+#endif
+}
+
+void LogShutdown() {
+#if defined(ASYNC_LOG)&&ASYNC_LOG
+    sLogThreadRunning = false;
+    if(sLogThread.joinable()) {
+        sLogThread.join();
+    }
 #endif
 }
 

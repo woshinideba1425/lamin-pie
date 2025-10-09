@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # LAMINPIE - Generic Platform Configuration
-set(LAMINPIE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set(LAMINPIE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 file(GLOB_RECURSE SOURCES ${LAMINPIE_ROOT_DIR}/src/*.c)
 set(SRCS_C "")
 set(SRCS_CPP "")
@@ -14,15 +14,8 @@ set(LAMINPIE_INC_DIRS ${LAMINPIE_ROOT_DIR})
 set(LAMINPIE_SRC_DIRS ${LAMINPIE_ROOT_DIR}/src)
 set(CORE_SRC_DIR ${LAMINPIE_ROOT_DIR}/src/core)
 
-# Find LVGL library
-set(LVGL_ROOT_DIR ${LAMINPIE_ROOT_DIR}/../../managed_components/lvgl__lvgl)
-if(EXISTS ${LVGL_ROOT_DIR})
-    set(LVGL_INC_DIR ${LVGL_ROOT_DIR})
-    set(LVGL_SRC_DIR ${LVGL_ROOT_DIR}/src)
-    message(STATUS "Found LVGL at: ${LVGL_ROOT_DIR}")
-else()
-    message(WARNING "LVGL not found at: ${LVGL_ROOT_DIR}")
-endif()
+# Find LVGL library using enhanced detection module
+include(${CMAKE_CURRENT_LIST_DIR}/FindLVGL.cmake)
 
 # Platform-specific definitions for generic platform
 add_definitions(-DPLATFORM_GENERIC)
@@ -96,8 +89,11 @@ list(APPEND SRCS_C ${GUI_SRCS_C})
 list(APPEND SRCS_CPP ${GUI_SRCS_CPP})
 list(APPEND LAMINPIE_INC_DIRS ${GUI_SRC_DIR} ${GUI_LVGL_SRC_DIR})
 # Add LVGL include directory if found
-if(EXISTS ${LVGL_ROOT_DIR})
+if(LVGL_FOUND)
     list(APPEND LAMINPIE_INC_DIRS ${LVGL_INC_DIR} ${LVGL_SRC_DIR})
+    message(STATUS "Added LVGL include directories to LaminPie")
+else()
+    message(WARNING "LVGL not found - GUI functionality may be limited")
 endif()
 
 #
@@ -112,11 +108,15 @@ list(APPEND SRCS_C ${PORTING_SRCS_C})
 list(APPEND SRCS_CPP ${PORTING_SRCS_CPP})
 list(APPEND LAMINPIE_INC_DIRS ${PORTING_SRC_DIR})
 
-# Build LaminPie library
-add_library(laminpie STATIC
-    ${SRCS_C}
-    ${SRCS_CPP}
-)
+# Build LaminPie library (only if not already defined)
+if(NOT TARGET laminpie)
+    add_library(laminpie STATIC
+        ${SRCS_C}
+        ${SRCS_CPP}
+    )
+else()
+    message(STATUS "laminpie target already exists, skipping creation")
+endif()
 
 # Add Kconfig dependency if Kconfig target exists
 if(TARGET laminpie_config)
@@ -125,6 +125,21 @@ if(TARGET laminpie_config)
     if(OUTPUT_FILE)
         get_filename_component(OUTPUT_DIR ${OUTPUT_FILE} DIRECTORY)
         target_include_directories(laminpie PUBLIC ${OUTPUT_DIR})
+        message(STATUS "Added Kconfig include directory: ${OUTPUT_DIR}")
+    else()
+        # Fallback: try to find sdkconfig.h in common locations
+        set(POSSIBLE_CONFIG_DIRS
+            ${CMAKE_CURRENT_BINARY_DIR}/config
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${LAMINPIE_ROOT_DIR}/build/config
+        )
+        foreach(CONFIG_DIR ${POSSIBLE_CONFIG_DIRS})
+            if(EXISTS ${CONFIG_DIR}/sdkconfig.h)
+                target_include_directories(laminpie PUBLIC ${CONFIG_DIR})
+                message(STATUS "Found sdkconfig.h in: ${CONFIG_DIR}")
+                break()
+            endif()
+        endforeach()
     endif()
 endif()
 
